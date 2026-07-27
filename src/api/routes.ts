@@ -3,10 +3,10 @@ import type { Readable } from 'node:stream';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { AvailableService } from './available.js';
-import type { AppConfig } from './config.js';
-import { AGENCY_IDS, REFERENCE_TYPES, type DownloadFilters } from './domain.js';
+import type { AppConfig } from '../config.js';
+import { AGENCY_IDS, REFERENCE_TYPES, type DownloadFilters } from './consts.js';
 import { ServiceUnavailableError } from './errors.js';
-import type { PublicDataRepository } from './repository.js';
+import type { PublicDataRepository } from '../database/repository.js';
 
 interface RegisterRoutesOptions {
   readonly config: AppConfig;

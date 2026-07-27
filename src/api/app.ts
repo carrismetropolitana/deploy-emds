@@ -3,9 +3,9 @@ import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 
-import type { AppConfig } from './config.js';
+import type { AppConfig } from '../config.js';
 import { ServiceUnavailableError } from './errors.js';
-import type { PublicDataRepository } from './repository.js';
+import type { PublicDataRepository } from '../database/repository.js';
 import { registerRoutes } from './routes.js';
 
 export interface BuildAppOptions {
@@ -15,19 +15,22 @@ export interface BuildAppOptions {
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
+  //
+
+  //
+  // API app builder
+
   const { config, repository } = options;
-  const logger =
-    options.logger === false  
-      ? false
-      : config.nodeEnv === 'development'
-        ? {
+  const logger = options.logger === false ? false : config.nodeEnv === 'development' ? {
             level: config.logLevel,
             transport: {
               target: 'pino-pretty',
               options: { colorize: true, translateTime: 'SYS:standard' },
             },
-          }
-        : { level: config.logLevel };
+          } : { level: config.logLevel };
+
+  //
+  // Fastify instance
 
   const app = Fastify({
     ajv: {
@@ -39,6 +42,9 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     logger,
     trustProxy: config.trustProxy,
   });
+
+  //
+  // Fastify plugins
 
   await app.register(cors, {
     exposedHeaders: ['Content-Disposition'],
@@ -61,6 +67,9 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     },
   });
 
+  //
+  // Fastify routes
+
   await registerRoutes(app, { config, repository });
 
   app.get(
@@ -72,6 +81,9 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     },
     async () => app.swagger(),
   );
+
+  //
+  // Fastify error handlers
 
   app.setNotFoundHandler(async (_request, reply) => {
     return reply.code(404).send({
@@ -124,6 +136,9 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       },
     });
   });
+
+  //
+  // Fastify close hook
 
   app.addHook('onClose', async () => {
     await repository.close();

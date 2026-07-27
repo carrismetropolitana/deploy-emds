@@ -1,4 +1,4 @@
-import type { DownloadFilters } from './domain.js';
+import type { DownloadFilters } from '../api/consts.js';
 
 export interface DatabaseIdentifiers {
   readonly apiTable: string;
@@ -51,7 +51,7 @@ export function buildApiGeneralCopySql(filters: DownloadFilters, identifiers: Da
 ) TO STDOUT WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8')`;
 }
 
-export function buildavailableSql(identifiers: DatabaseIdentifiers): string {
+export function buildAvailableSql(identifiers: DatabaseIdentifiers): string {
   const table = quoteIdentifierPath(identifiers.apiTable);
   const referenceColumn = quoteIdentifier(identifiers.referenceColumn);
 

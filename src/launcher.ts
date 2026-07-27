@@ -1,14 +1,14 @@
 import { spawn } from 'node:child_process';
 
 import { loadConfig } from './config.js';
-import { ensureSshTunnel, waitForProcess } from './tunnel-manager.js';
+import { ensureSshTunnel, waitForProcess } from './ssh/tunnel-manager.js';
 
 const config = loadConfig();
 const watch = process.argv.includes('--watch');
 const tunnel = await ensureSshTunnel(config, true);
 const serverArguments = watch
-  ? ['--env-file=.env', '--import', 'tsx', '--watch', 'src/server.ts']
-  : ['--env-file=.env', '--enable-source-maps', 'dist/server.js'];
+  ? ['--env-file=.env', '--import', 'tsx', '--watch', 'src/api/server.ts']
+  : ['--env-file=.env', '--enable-source-maps', 'dist/api/server.js'];
 const server = spawn(process.execPath, serverArguments, {
   env: process.env,
   stdio: 'inherit',

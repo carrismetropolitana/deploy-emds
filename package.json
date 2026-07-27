@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "db:tunnel": "node --env-file=.env --import tsx src/tunnel.ts",
+    "db:tunnel": "node --env-file=.env --import tsx src/ssh/tunnel.ts",
     "dev": "node --env-file=.env --import tsx src/launcher.ts --watch",
     "start": "node --env-file=.env --enable-source-maps dist/launcher.js",
     "typecheck": "tsc --noEmit",
