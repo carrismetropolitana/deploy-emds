@@ -24,7 +24,7 @@ describe('HTTP routes', () => {
     const { app, repository } = await createTestApp();
     const response = await app.inject({
       method: 'GET',
-      url: '/v1?yearmonth=202605&agency_id=43&reference=freeflow&route_id=3112_0',
+      url: '/api?yearmonth=202605&agency_id=43&reference=freeflow&route_id=3112_0',
     });
 
     expect(response.statusCode).toBe(200);
@@ -48,7 +48,7 @@ describe('HTTP routes', () => {
     const { app, repository } = await createTestApp();
     const response = await app.inject({
       method: 'GET',
-      url: '/v1?yearmonth=202605&agency_id=43',
+      url: '/api?yearmonth=202605&agency_id=43',
     });
 
     expect(response.statusCode).toBe(200);
@@ -66,15 +66,15 @@ describe('HTTP routes', () => {
 
     const missing = await app.inject({
       method: 'GET',
-      url: '/v1?yearmonth=202605',
+      url: '/api?yearmonth=202605',
     });
     const invalidMonth = await app.inject({
       method: 'GET',
-      url: '/v1?yearmonth=202613&agency_id=41&reference=planned',
+      url: '/api?yearmonth=202613&agency_id=41&reference=planned',
     });
     const unknown = await app.inject({
       method: 'GET',
-      url: '/v1?yearmonth=202605&agency_id=41&reference=planned&limit=10',
+      url: '/api?yearmonth=202605&agency_id=41&reference=planned&limit=10',
     });
 
     expect(missing.statusCode).toBe(400);
@@ -87,7 +87,7 @@ describe('HTTP routes', () => {
     const { app } = await createTestApp();
     const response = await app.inject({
       method: 'GET',
-      url: '/v1/availability',
+      url: '/api/available',
     });
 
     expect(response.statusCode).toBe(200);
@@ -125,8 +125,8 @@ describe('HTTP routes', () => {
     expect(response.statusCode).toBe(200);
     expect(document.openapi).toBe('3.0.3');
     expect(
-      document.paths['/v1'].get.responses['200'],
+      document.paths['/api'].get.responses['200'],
     ).toBeDefined();
-    expect(document.paths['/v1/availability'].get).toBeDefined();
+    expect(document.paths['/api/available'].get).toBeDefined();
   });
 });

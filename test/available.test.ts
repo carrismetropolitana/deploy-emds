@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { AvailabilityService, groupAvailability } from '../src/availability.js';
+import { AvailableService, groupavailable } from '../src/available.js';
 import { FakePublicDataRepository } from './helpers.js';
 
-describe('availability', () => {
+describe('available', () => {
   it('groups references under month and agency', () => {
     expect(
-      groupAvailability([
+      groupavailable([
         { agency_id: '41', reference: 'planned', yearmonth: '202605' },
         { agency_id: '41', reference: 'freeflow', yearmonth: '202605' },
         { agency_id: '42', reference: 'freeflow', yearmonth: '202605' },
@@ -25,11 +25,11 @@ describe('availability', () => {
   it('caches discovery data', async () => {
     const repository = new FakePublicDataRepository();
     let calls = 0;
-    repository.listAvailability = async () => {
+    repository.listavailable = async () => {
       calls += 1;
-      return repository.availability;
+      return repository.available;
     };
-    const service = new AvailabilityService(repository, 60_000);
+    const service = new AvailableService(repository, 60_000);
 
     const first = await service.list();
     const second = await service.list();

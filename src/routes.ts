@@ -2,7 +2,7 @@ import type { Readable } from 'node:stream';
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { AvailabilityService } from './availability.js';
+import { AvailableService } from './available.js';
 import type { AppConfig } from './config.js';
 import { AGENCY_IDS, REFERENCE_TYPES, type DownloadFilters } from './domain.js';
 import { ServiceUnavailableError } from './errors.js';
@@ -104,10 +104,7 @@ async function createDownload(
 
 export async function registerRoutes(app: FastifyInstance, options: RegisterRoutesOptions): Promise<void> {
   const { config, repository } = options;
-  const availabilityService = new AvailabilityService(
-    repository,
-    config.availabilityCacheSeconds * 1_000,
-  );
+  const availableService = new AvailableService(repository, config.availableCacheSeconds * 1_000);
   const downloadRouteConfig = {
     rateLimit: {
       max: config.downloadRateLimitMax,
@@ -163,7 +160,7 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
   );
 
   app.get<{ Querystring: DownloadFilters }>(
-    '/v1',
+    '/api',
     {
       config: downloadRouteConfig,
       schema: {
@@ -195,7 +192,7 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
   );
 
   app.get(
-    '/v1/availability',
+    '/api/available',
     {
       schema: {
         tags: ['Discovery'],
@@ -241,7 +238,7 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
     },
     async () => {
       try {
-        return await availabilityService.list();
+        return await availableService.list();
       } catch (error) {
         throw new ServiceUnavailableError('The database is temporarily unavailable', {
           cause: error,

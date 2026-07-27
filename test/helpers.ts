@@ -1,12 +1,12 @@
 import { Readable } from 'node:stream';
 
 import type { AppConfig } from '../src/config.js';
-import type { AvailabilityRow, DownloadFilters } from '../src/domain.js';
+import type { availableRow, DownloadFilters } from '../src/domain.js';
 import type { PublicDataRepository } from '../src/repository.js';
 
 export const testConfig: AppConfig = {
   apiTable: 'mobilidade.api_general',
-  availabilityCacheSeconds: 300,
+  availableCacheSeconds: 300,
   databaseConnectionTimeoutMs: 10_000,
   databaseIdleTimeoutMs: 30_000,
   databaseJumpServer: undefined,
@@ -33,7 +33,7 @@ export const testConfig: AppConfig = {
 };
 
 export class FakePublicDataRepository implements PublicDataRepository {
-  availability: readonly AvailabilityRow[] = [
+  available: readonly availableRow[] = [
     { agency_id: '41', reference: 'freeflow', yearmonth: '202605' },
     { agency_id: '41', reference: 'planned', yearmonth: '202605' },
   ];
@@ -50,8 +50,8 @@ export class FakePublicDataRepository implements PublicDataRepository {
     return Readable.from(['yearmonth,agency_id\n202605,41\n']);
   }
 
-  async listAvailability(): Promise<readonly AvailabilityRow[]> {
-    return this.availability;
+  async listavailable(): Promise<readonly availableRow[]> {
+    return this.available;
   }
 
   async ping(): Promise<void> {

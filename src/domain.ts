@@ -11,18 +11,18 @@ export interface DownloadFilters {
   readonly yearmonth: string;
 }
 
-export interface AvailabilityRow {
+export interface availableRow {
   readonly agency_id: string;
   readonly reference: string;
   readonly yearmonth: string;
 }
 
-export interface AvailabilityAgency {
+export interface availableAgency {
   readonly agency_id: string;
   readonly references: readonly string[];
 }
 
-export interface AvailabilityMonth {
-  readonly agencies: readonly AvailabilityAgency[];
+export interface availableMonth {
+  readonly agencies: readonly availableAgency[];
   readonly yearmonth: string;
 }

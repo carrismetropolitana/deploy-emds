@@ -4,7 +4,7 @@ const SQL_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_$]*$/;
 
 export interface AppConfig {
   readonly apiTable: string;
-  readonly availabilityCacheSeconds: number;
+  readonly availableCacheSeconds: number;
   readonly databaseConnectionTimeoutMs: number;
   readonly databaseIdleTimeoutMs: number;
   readonly databaseJumpServer: string | undefined;
@@ -91,9 +91,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       'DB_API_TABLE',
       'mobilidade.api_general',
     ),
-    availabilityCacheSeconds: getInteger(
+    availableCacheSeconds: getInteger(
       environment,
-      'AVAILABILITY_CACHE_SECONDS',
+      'available_CACHE_SECONDS',
       300,
       0,
     ),

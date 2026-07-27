@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-6092}:6092"
     read_only: true
     tmpfs:
       - /tmp

@@ -51,7 +51,7 @@ export function buildApiGeneralCopySql(filters: DownloadFilters, identifiers: Da
 ) TO STDOUT WITH (FORMAT CSV, HEADER TRUE, ENCODING 'UTF8')`;
 }
 
-export function buildAvailabilitySql(identifiers: DatabaseIdentifiers): string {
+export function buildavailableSql(identifiers: DatabaseIdentifiers): string {
   const table = quoteIdentifierPath(identifiers.apiTable);
   const referenceColumn = quoteIdentifier(identifiers.referenceColumn);
 

@@ -3,17 +3,17 @@ import type { Readable } from 'node:stream';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
 import { to as copyTo } from 'pg-copy-streams';
 
-import type { AvailabilityRow, DownloadFilters } from './domain.js';
-import { buildAvailabilitySql, buildApiGeneralCopySql, type DatabaseIdentifiers } from './sql.js';
+import type { availableRow, DownloadFilters } from './domain.js';
+import { buildavailableSql, buildApiGeneralCopySql, type DatabaseIdentifiers } from './sql.js';
 
 export interface PublicDataRepository {
   close(): Promise<void>;
   createApiGeneralDownload(filters: DownloadFilters): Promise<Readable>;
-  listAvailability(): Promise<readonly AvailabilityRow[]>;
+  listavailable(): Promise<readonly availableRow[]>;
   ping(): Promise<void>;
 }
 
-interface DatabaseAvailabilityRow extends QueryResultRow, AvailabilityRow {}
+interface DatabaseavailableRow extends QueryResultRow, availableRow {}
 
 export class PostgresPublicDataRepository implements PublicDataRepository {
   constructor(
@@ -29,9 +29,9 @@ export class PostgresPublicDataRepository implements PublicDataRepository {
     return this.createCopyStream(buildApiGeneralCopySql(filters, this.identifiers));
   }
 
-  async listAvailability(): Promise<readonly AvailabilityRow[]> {
-    const result = await this.pool.query<DatabaseAvailabilityRow>(
-      buildAvailabilitySql(this.identifiers),
+  async listavailable(): Promise<readonly availableRow[]> {
+    const result = await this.pool.query<DatabaseavailableRow>(
+      buildavailableSql(this.identifiers),
     );
     return result.rows;
   }

@@ -1,17 +1,17 @@
-import type {AvailabilityAgency, AvailabilityMonth, AvailabilityRow} from './domain.js';
+import type {availableAgency, availableMonth, availableRow} from './domain.js';
 import type { PublicDataRepository } from './repository.js';
 
-export interface AvailabilityResponse {
-  readonly data: readonly AvailabilityMonth[];
+export interface availableResponse {
+  readonly data: readonly availableMonth[];
   readonly generated_at: string;
 }
 
-interface AvailabilityCacheEntry {
+interface availableCacheEntry {
   readonly expiresAt: number;
-  readonly response: AvailabilityResponse;
+  readonly response: availableResponse;
 }
 
-export function groupAvailability(rows: readonly AvailabilityRow[]): readonly AvailabilityMonth[] {
+export function groupavailable(rows: readonly availableRow[]): readonly availableMonth[] {
   const months = new Map<string, Map<string, Set<string>>>();
 
   for (const row of rows) {
@@ -31,7 +31,7 @@ export function groupAvailability(rows: readonly AvailabilityRow[]): readonly Av
   }
 
   return Array.from(months, ([yearmonth, agencies]) => ({
-    agencies: Array.from(agencies, ([agency_id, references]): AvailabilityAgency => ({
+    agencies: Array.from(agencies, ([agency_id, references]): availableAgency => ({
       agency_id,
       references: Array.from(references).sort(),
     })),
@@ -39,16 +39,16 @@ export function groupAvailability(rows: readonly AvailabilityRow[]): readonly Av
   }));
 }
 
-export class AvailabilityService {
-  private cache: AvailabilityCacheEntry | undefined;
-  private pending: Promise<AvailabilityResponse> | undefined;
+export class AvailableService {
+  private cache: availableCacheEntry | undefined;
+  private pending: Promise<availableResponse> | undefined;
 
   constructor(
     private readonly repository: PublicDataRepository,
     private readonly cacheTtlMilliseconds: number,
   ) {}
 
-  async list(): Promise<AvailabilityResponse> {
+  async list(): Promise<availableResponse> {
     const now = Date.now();
     if (this.cache && this.cache.expiresAt > now) {
       return this.cache.response;
@@ -67,10 +67,10 @@ export class AvailabilityService {
     }
   }
 
-  private async refresh(now: number): Promise<AvailabilityResponse> {
-    const rows = await this.repository.listAvailability();
+  private async refresh(now: number): Promise<availableResponse> {
+    const rows = await this.repository.listavailable();
     const response = {
-      data: groupAvailability(rows),
+      data: groupavailable(rows),
       generated_at: new Date(now).toISOString(),
     };
 

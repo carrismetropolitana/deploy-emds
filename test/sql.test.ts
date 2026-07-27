@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DownloadFilters } from '../src/domain.js';
 import {
-  buildAvailabilitySql,
+  buildavailableSql,
   buildApiGeneralCopySql,
   sqlLiteral,
 } from '../src/sql.js';
@@ -51,7 +51,7 @@ describe('download SQL', () => {
   });
 
   it('builds the discovery aggregation from api_general', () => {
-    const sql = buildAvailabilitySql(identifiers);
+    const sql = buildavailableSql(identifiers);
 
     expect(sql).toContain('a."yearmonth"::text AS yearmonth');
     expect(sql).toContain('a."reference_type"::text AS reference');
