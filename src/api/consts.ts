@@ -38,6 +38,10 @@ interface DownloadBaseFilters {
    * (Filter) Specific route within the agency/area (optional).
    */
   readonly route_id?: string;
+  /**
+   * (Filter) Specific trip within the agency/area (optional).
+   */
+  readonly trip_id?: string;
 }
 
 interface DownloadSingleMonthFilter {

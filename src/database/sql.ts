@@ -48,6 +48,10 @@ function filtersSql(alias: string, filters: DownloadFilters, referenceColumn: st
     conditions.push(`${alias}."route_id" = ${sqlLiteral(filters.route_id)}`);
   }
 
+  if (filters.trip_id !== undefined) {
+    conditions.push(`${alias}."trip_id" = ${sqlLiteral(filters.trip_id)}`);
+  }
+
   return conditions;
 }
 

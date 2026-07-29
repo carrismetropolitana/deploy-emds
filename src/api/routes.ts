@@ -92,6 +92,12 @@ const downloadQuerySchema = {
       description: 'Optional route identifier.',
       examples: ['1001_0'],
     },
+    trip_id: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
+      description: 'Optional trip identifier.',
+    },
   },
 } as const;
 
