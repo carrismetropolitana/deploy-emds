@@ -1,13 +1,20 @@
 /**
- * Types and service for listing available data months grouped by agency and reference.
+ * Types and service for listing available data months grouped by agency,
+ * reference, and disturbance class.
  * 
  * - `availableResponse`: Response shape for available months endpoint.
  * - `AvailableService`: Handles listing and caching available data.
- * - `groupAvailable`: Groups flat rows into hierarchical shape (month → agency → references).
+ * - `groupAvailable`: Groups flat rows into hierarchical shape
+ *   (month → agency → references and disturbance classes).
  */
 
 import type { availableAgency, availableMonth, availableRow } from './consts.js';
 import type { PublicDataRepository } from '../database/repository.js';
+
+interface AvailableAgencyValues {
+  readonly disturbanceClasses: Set<string>;
+  readonly references: Set<string>;
+}
 
 /**
  * Response format for the available months API.
@@ -28,12 +35,14 @@ interface AvailableCacheEntry {
 /**
  * Groups flat available rows into structure by month, then by agency.
  * 
- * @param rows Source rows, each containing yearmonth, agency, and reference.
- * @returns Grouped month objects, each with agencies, each with references.
+ * @param rows Source rows, each containing yearmonth, agency, reference, and
+ * disturbance class.
+ * @returns Grouped month objects, each with agencies, references, and
+ * disturbance classes.
  */
 export function groupAvailable(rows: readonly availableRow[]): readonly availableMonth[] {
-  // Map: yearmonth → Map(agency_id → Set(reference))
-  const months = new Map<string, Map<string, Set<string>>>();
+  // Map: yearmonth → Map(agency_id → references and disturbance classes)
+  const months = new Map<string, Map<string, AvailableAgencyValues>>();
 
   for (const row of rows) {
     // Get or create agency mapping for this month
@@ -43,21 +52,26 @@ export function groupAvailable(rows: readonly availableRow[]): readonly availabl
       months.set(row.yearmonth, agencies);
     }
 
-    // Get or create reference set for this agency in this month
-    let references = agencies.get(row.agency_id);
-    if (!references) {
-      references = new Set();
-      agencies.set(row.agency_id, references);
+    // Get or create the available values for this agency in this month
+    let values = agencies.get(row.agency_id);
+    if (!values) {
+      values = {
+        disturbanceClasses: new Set(),
+        references: new Set(),
+      };
+      agencies.set(row.agency_id, values);
     }
 
-    references.add(row.reference);
+    values.disturbanceClasses.add(row.disturbance_class);
+    values.references.add(row.reference);
   }
 
   // Convert nested maps to desired output structure
   return Array.from(months, ([yearmonth, agencies]) => ({
-    agencies: Array.from(agencies, ([agency_id, references]): availableAgency => ({
+    agencies: Array.from(agencies, ([agency_id, values]): availableAgency => ({
       agency_id,
-      references: Array.from(references).sort(), // sorted for consistency
+      disturbance_classes: Array.from(values.disturbanceClasses).sort(),
+      references: Array.from(values.references).sort(),
     })),
     yearmonth,
   }));

@@ -243,7 +243,7 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
     {
       schema: {
         tags: ['Discovery'],
-        summary: 'List available months, agencies, and references',
+        summary: 'List available months, agencies, references, and disturbance classes',
         response: {
           200: {
             type: 'object',
@@ -264,9 +264,13 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
                       items: {
                         type: 'object',
                         additionalProperties: false,
-                        required: ['agency_id', 'references'],
+                        required: ['agency_id', 'disturbance_classes', 'references'],
                         properties: {
                           agency_id: { type: 'string' },
+                          disturbance_classes: {
+                            type: 'array',
+                            items: { type: 'string' },
+                          },
                           references: {
                             type: 'array',
                             items: { type: 'string' },

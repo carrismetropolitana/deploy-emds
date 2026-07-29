@@ -63,11 +63,14 @@ export type DownloadFilters = DownloadBaseFilters &
 
 /**
  * Structure representing a single row/result of the API's "available" endpoint.
- * Lists a single yearmonth and reference type for a specific operator area.
+ * Lists a single yearmonth, reference type, and disturbance class for a specific
+ * operator area.
  */
 export interface availableRow {
   /** Operator agency/area ID. */
   readonly agency_id: string;
+  /** Disturbance class available for the given agency/month. */
+  readonly disturbance_class: string;
   /** Reference type available for the given agency/month. */
   readonly reference: string;
   /** Year and month (YYYYMM) for the available dataset. */
@@ -75,22 +78,26 @@ export interface availableRow {
 }
 
 /**
- * Structure representing all available references for a given agency/month,
- * as nested under the "agencies" property in the "available" endpoint.
+ * Structure representing all available references and disturbance classes for
+ * a given agency/month, as nested under the "agencies" property in the
+ * "available" endpoint.
  */
 export interface availableAgency {
   /** Operator agency/area ID. */
   readonly agency_id: string;
+  /** Set of disturbance classes available for this agency/month. */
+  readonly disturbance_classes: readonly string[];
   /** Set of reference types ("planned", "freeflow") available for this agency/month. */
   readonly references: readonly string[];
 }
 
 /**
  * Structure representing an available yearmonth ('YYYYMM'), with a list of
- * agencies and their available references for that period.
+ * agencies and their available references and disturbance classes for that
+ * period.
  */
 export interface availableMonth {
-  /** List of agencies/areas and available reference types for this month. */
+  /** List of agencies/areas and available data classifications for this month. */
   readonly agencies: readonly availableAgency[];
   /** Year and month (YYYYMM) for the dataset. */
   readonly yearmonth: string;

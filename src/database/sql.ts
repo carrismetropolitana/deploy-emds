@@ -67,8 +67,9 @@ export function buildAvailableSql(identifiers: DatabaseIdentifiers): string {
   return `SELECT
   a."yearmonth"::text AS yearmonth,
   a."agency_id"::text AS agency_id,
-  a.${referenceColumn}::text AS reference
-FROM ${table} AS a
-GROUP BY a."yearmonth", a."agency_id", a.${referenceColumn}
-ORDER BY a."yearmonth" DESC, a."agency_id", a.${referenceColumn}`;
+  a.${referenceColumn}::text AS reference,
+  a."disturbance_class"::text AS disturbance_class
+	FROM ${table} AS a
+	GROUP BY a."yearmonth", a."agency_id", a.${referenceColumn}, a."disturbance_class"
+	ORDER BY a."yearmonth" DESC, a."agency_id", a.${referenceColumn}, a."disturbance_class"`;
 }
