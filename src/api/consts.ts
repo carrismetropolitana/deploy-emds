@@ -27,6 +27,10 @@ interface DownloadBaseFilters {
    */
   readonly agency_id: AgencyId;
   /**
+   * Disturbance class to include (optional).
+   */
+  readonly disturbance_class?: string;
+  /**
    * Reference type ("planned", "freeflow"). Optional – defaults to "planned".
    */
   readonly reference?: ReferenceType;
@@ -78,27 +82,15 @@ export interface availableRow {
 }
 
 /**
- * Structure representing all available references and disturbance classes for
- * a given agency/month, as nested under the "agencies" property in the
- * "available" endpoint.
+ * Distinct values currently available for every discoverable dataset field.
  */
-export interface availableAgency {
-  /** Operator agency/area ID. */
-  readonly agency_id: string;
-  /** Set of disturbance classes available for this agency/month. */
-  readonly disturbance_classes: readonly string[];
-  /** Set of reference types ("planned", "freeflow") available for this agency/month. */
-  readonly references: readonly string[];
-}
-
-/**
- * Structure representing an available yearmonth ('YYYYMM'), with a list of
- * agencies and their available references and disturbance classes for that
- * period.
- */
-export interface availableMonth {
-  /** List of agencies/areas and available data classifications for this month. */
-  readonly agencies: readonly availableAgency[];
-  /** Year and month (YYYYMM) for the dataset. */
-  readonly yearmonth: string;
+export interface availableData {
+  /** Years and months (YYYYMM). */
+  readonly yearmonth: readonly string[];
+  /** Operator agency/area IDs. */
+  readonly agency_id: readonly string[];
+  /** Reference types ("planned", "freeflow"). */
+  readonly reference: readonly string[];
+  /** Disturbance classes. */
+  readonly disturbance_class: readonly string[];
 }

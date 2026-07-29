@@ -1,28 +1,22 @@
 /**
- * Types and service for listing available data months grouped by agency,
- * reference, and disturbance class.
+ * Types and service for listing distinct values available for each dataset
+ * field.
  * 
- * - `availableResponse`: Response shape for available months endpoint.
+ * - `availableResponse`: Response shape for the available data endpoint.
  * - `AvailableService`: Handles listing and caching available data.
- * - `groupAvailable`: Groups flat rows into hierarchical shape
- *   (month → agency → references and disturbance classes).
+ * - `organizeAvailable`: Organizes flat rows into arrays of distinct values.
  */
 
-import type { availableAgency, availableMonth, availableRow } from './consts.js';
+import type { availableData, availableRow } from './consts.js';
 import type { PublicDataRepository } from '../database/repository.js';
 
-interface AvailableAgencyValues {
-  readonly disturbanceClasses: Set<string>;
-  readonly references: Set<string>;
-}
-
 /**
- * Response format for the available months API.
- * - `data`: Grouped available data, by month and agency.
+ * Response format for the available data API.
+ * - `data`: Distinct values available for each dataset field.
  * - `generated_at`: When the response was generated (ISO 8601).
  */
 export interface availableResponse {
-  readonly data: readonly availableMonth[];
+  readonly data: availableData;
   readonly generated_at: string;
 }
 
@@ -33,52 +27,35 @@ interface AvailableCacheEntry {
 }
 
 /**
- * Groups flat available rows into structure by month, then by agency.
+ * Organizes flat available rows into sorted arrays of distinct values.
  * 
  * @param rows Source rows, each containing yearmonth, agency, reference, and
  * disturbance class.
- * @returns Grouped month objects, each with agencies, references, and
- * disturbance classes.
+ * @returns Distinct available values grouped by field name.
  */
-export function groupAvailable(rows: readonly availableRow[]): readonly availableMonth[] {
-  // Map: yearmonth → Map(agency_id → references and disturbance classes)
-  const months = new Map<string, Map<string, AvailableAgencyValues>>();
+export function organizeAvailable(rows: readonly availableRow[]): availableData {
+  const agencyIds = new Set<string>();
+  const disturbanceClasses = new Set<string>();
+  const references = new Set<string>();
+  const yearmonths = new Set<string>();
 
   for (const row of rows) {
-    // Get or create agency mapping for this month
-    let agencies = months.get(row.yearmonth);
-    if (!agencies) {
-      agencies = new Map();
-      months.set(row.yearmonth, agencies);
-    }
-
-    // Get or create the available values for this agency in this month
-    let values = agencies.get(row.agency_id);
-    if (!values) {
-      values = {
-        disturbanceClasses: new Set(),
-        references: new Set(),
-      };
-      agencies.set(row.agency_id, values);
-    }
-
-    values.disturbanceClasses.add(row.disturbance_class);
-    values.references.add(row.reference);
+    agencyIds.add(row.agency_id);
+    disturbanceClasses.add(row.disturbance_class);
+    references.add(row.reference);
+    yearmonths.add(row.yearmonth);
   }
 
-  // Convert nested maps to desired output structure
-  return Array.from(months, ([yearmonth, agencies]) => ({
-    agencies: Array.from(agencies, ([agency_id, values]): availableAgency => ({
-      agency_id,
-      disturbance_classes: Array.from(values.disturbanceClasses).sort(),
-      references: Array.from(values.references).sort(),
-    })),
-    yearmonth,
-  }));
+  return {
+    yearmonth: Array.from(yearmonths).sort(),
+    agency_id: Array.from(agencyIds).sort(),
+    reference: Array.from(references).sort(),
+    disturbance_class: Array.from(disturbanceClasses).sort(),
+  };
 }
 
 /**
- * Service for retrieving, grouping, and caching available month/agency data.
+ * Service for retrieving, organizing, and caching available data.
  */
 export class AvailableService {
   private cache: AvailableCacheEntry | undefined;
@@ -94,7 +71,7 @@ export class AvailableService {
   ) {}
 
   /**
-   * List available months grouped by agency and filtered by cache.
+   * List distinct available values, using the cached response when valid.
    * @returns Cached or fresh `availableResponse` data.
    */
   async list(): Promise<availableResponse> {
@@ -125,7 +102,7 @@ export class AvailableService {
     // Note: Repository must provide `listAvailable` returning availableRow[]
     const rows = await this.repository.listAvailable();
     const response = {
-      data: groupAvailable(rows),
+      data: organizeAvailable(rows),
       generated_at: new Date(now).toISOString(),
     };
 

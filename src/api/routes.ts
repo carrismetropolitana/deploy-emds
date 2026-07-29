@@ -73,6 +73,12 @@ const downloadQuerySchema = {
       enum: AGENCY_IDS,
       description: 'Carris Metropolitana operator area.',
     },
+    disturbance_class: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 128,
+      description: 'Optional disturbance class.',
+    },
     reference: {
       type: 'string',
       enum: REFERENCE_TYPES,
@@ -243,7 +249,7 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
     {
       schema: {
         tags: ['Discovery'],
-        summary: 'List available months, agencies, references, and disturbance classes',
+        summary: 'List distinct values available for each dataset field',
         response: {
           200: {
             type: 'object',
@@ -252,32 +258,25 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
             properties: {
               generated_at: { type: 'string', format: 'date-time' },
               data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  additionalProperties: false,
-                  required: ['yearmonth', 'agencies'],
-                  properties: {
-                    yearmonth: { type: 'string' },
-                    agencies: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        additionalProperties: false,
-                        required: ['agency_id', 'disturbance_classes', 'references'],
-                        properties: {
-                          agency_id: { type: 'string' },
-                          disturbance_classes: {
-                            type: 'array',
-                            items: { type: 'string' },
-                          },
-                          references: {
-                            type: 'array',
-                            items: { type: 'string' },
-                          },
-                        },
-                      },
-                    },
+                type: 'object',
+                additionalProperties: false,
+                required: ['yearmonth', 'agency_id', 'reference', 'disturbance_class'],
+                properties: {
+                  yearmonth: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  agency_id: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  reference: {
+                    type: 'array',
+                    items: { type: 'string' },
+                  },
+                  disturbance_class: {
+                    type: 'array',
+                    items: { type: 'string' },
                   },
                 },
               },

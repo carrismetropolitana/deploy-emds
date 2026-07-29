@@ -38,6 +38,12 @@ function filtersSql(alias: string, filters: DownloadFilters, referenceColumn: st
     );
   }
 
+  if (filters.disturbance_class !== undefined) {
+    conditions.push(
+      `${alias}."disturbance_class" = ${sqlLiteral(filters.disturbance_class)}`,
+    );
+  }
+
   if (filters.route_id !== undefined) {
     conditions.push(`${alias}."route_id" = ${sqlLiteral(filters.route_id)}`);
   }
