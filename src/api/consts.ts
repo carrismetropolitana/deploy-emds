@@ -21,11 +21,7 @@ export type AgencyId = (typeof AGENCY_IDS)[number];
  */
 export type ReferenceType = (typeof REFERENCE_TYPES)[number];
 
-/**
- * Download parameter filters for times/delays data.
- * Represents the valid query parameters used for download API routes.
- */
-export interface DownloadFilters {
+interface DownloadBaseFilters {
   /**
    * Operator agency/area ID. Must match one of {@link AgencyId}.
    */
@@ -38,11 +34,32 @@ export interface DownloadFilters {
    * (Filter) Specific route within the agency/area (optional).
    */
   readonly route_id?: string;
+}
+
+interface DownloadSingleMonthFilter {
   /**
    * Requested period, in YYYYMM format, e.g. "202612" (required).
    */
   readonly yearmonth: string;
+  readonly yearmonth_from?: never;
+  readonly yearmonth_to?: never;
 }
+
+interface DownloadMonthRangeFilter {
+  readonly yearmonth?: never;
+  /** First requested month, inclusive, in YYYYMM format. */
+  readonly yearmonth_from: string;
+  /** Last requested month, inclusive, in YYYYMM format. */
+  readonly yearmonth_to: string;
+}
+
+/**
+ * Download parameter filters for times/delays data.
+ * Accepts either one `yearmonth` or an inclusive `yearmonth_from`/`yearmonth_to`
+ * range.
+ */
+export type DownloadFilters = DownloadBaseFilters &
+  (DownloadSingleMonthFilter | DownloadMonthRangeFilter);
 
 /**
  * Structure representing a single row/result of the API's "available" endpoint.

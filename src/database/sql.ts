@@ -19,9 +19,18 @@ export function sqlLiteral(value: string): string {
 
 function filtersSql(alias: string, filters: DownloadFilters, referenceColumn: string): string[] {
   const conditions = [
-    `${alias}."yearmonth" = ${sqlLiteral(filters.yearmonth)}`,
     `${alias}."agency_id" = ${sqlLiteral(filters.agency_id)}`,
   ];
+
+  if (filters.yearmonth !== undefined) {
+    conditions.unshift(
+      `${alias}."yearmonth" = ${sqlLiteral(filters.yearmonth)}`,
+    );
+  } else {
+    conditions.unshift(
+      `${alias}."yearmonth" BETWEEN ${sqlLiteral(filters.yearmonth_from)} AND ${sqlLiteral(filters.yearmonth_to)}`,
+    );
+  }
 
   if (filters.reference !== undefined) {
     conditions.push(

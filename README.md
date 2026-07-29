@@ -39,14 +39,30 @@ Main fields:
 
 ## How to query
 
-Because of the data volume, every download request must include these filters:
+Because of the data volume, every download request must include either one
+month (`yearmonth`) or an inclusive month range (`yearmonth_from` and
+`yearmonth_to`):
 
 | Filter | Required | Values |
 | --- | --- | --- |
-| `yearmonth` | Yes | `YYYYMM` (e.g. `202505`) |
+| `yearmonth` | Conditional | One month in `YYYYMM` format (e.g. `202605`) |
+| `yearmonth_from` | Conditional | First month of the inclusive range (e.g. `202605`) |
+| `yearmonth_to` | Conditional | Last month of the inclusive range (e.g. `202606`) |
 | `agency_id` | Yes | `41`, `42`, `43`, or `44` |
 | `reference` | Yes | `planned` or `freeflow` |
 | `route_id` | No | e.g. `1001_0` |
+
+Single-month example:
+
+```http
+GET /api?yearmonth=202605&agency_id=41&reference=planned
+```
+
+Inclusive range example:
+
+```http
+GET /api?yearmonth_from=202605&yearmonth_to=202606&agency_id=41&reference=planned
+```
 
 Large responses may be paginated.
 

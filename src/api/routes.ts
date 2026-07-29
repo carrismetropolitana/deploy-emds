@@ -33,13 +33,40 @@ const errorSchema = {
 const downloadQuerySchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['yearmonth', 'agency_id'],
+  required: ['agency_id'],
+  oneOf: [
+    {
+      required: ['yearmonth'],
+      not: {
+        anyOf: [
+          { required: ['yearmonth_from'] },
+          { required: ['yearmonth_to'] },
+        ],
+      },
+    },
+    {
+      required: ['yearmonth_from', 'yearmonth_to'],
+      not: { required: ['yearmonth'] },
+    },
+  ],
   properties: {
     yearmonth: {
       type: 'string',
       pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
       description: 'Completed month in YYYYMM format.',
       examples: ['202605'],
+    },
+    yearmonth_from: {
+      type: 'string',
+      pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
+      description: 'First completed month in an inclusive YYYYMM range.',
+      examples: ['202605'],
+    },
+    yearmonth_to: {
+      type: 'string',
+      pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
+      description: 'Last completed month in an inclusive YYYYMM range.',
+      examples: ['202606'],
     },
     agency_id: {
       type: 'string',
@@ -62,12 +89,20 @@ const downloadQuerySchema = {
   },
 } as const;
 
+function downloadPeriod(filters: DownloadFilters): string {
+  if (filters.yearmonth !== undefined) {
+    return filters.yearmonth;
+  }
+
+  return `${filters.yearmonth_from}-${filters.yearmonth_to}`;
+}
+
 function downloadFilename(filters: DownloadFilters): string {
   const referenceSuffix =
     filters.reference === undefined ? '' : `_${filters.reference}`;
   const routeSuffix =
     filters.route_id === undefined ? '' : `_route-${filters.route_id}`;
-  return `api_general_${filters.yearmonth}_${filters.agency_id}${referenceSuffix}${routeSuffix}.csv`;
+  return `api_general_${downloadPeriod(filters)}_${filters.agency_id}${referenceSuffix}${routeSuffix}.csv`;
 }
 
 async function createDownload(
@@ -76,6 +111,18 @@ async function createDownload(
   repository: PublicDataRepository,
   cacheSeconds: number,
 ): Promise<FastifyReply> {
+  if (
+    request.query.yearmonth === undefined &&
+    request.query.yearmonth_from > request.query.yearmonth_to
+  ) {
+    return reply.code(400).send({
+      error: {
+        code: 'INVALID_QUERY',
+        message: 'yearmonth_from must be before or equal to yearmonth_to',
+      },
+    });
+  }
+
   let stream: Readable;
 
   try {
