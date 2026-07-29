@@ -8,8 +8,9 @@
 
 import { spawn } from 'node:child_process';
 
-import { loadConfig } from './config.js';
-import { ensureSshTunnel, waitForProcess } from './ssh/tunnel-manager.js';
+import { loadConfig } from './config/index.js';
+import { waitForProcess } from './ssh/process.js';
+import { ensureSshTunnel } from './ssh/tunnel-manager.js';
 
 // Load application configuration from environment
 const config = loadConfig();

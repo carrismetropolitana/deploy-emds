@@ -12,9 +12,9 @@
  */
 
 import { buildApp } from './app.js';
-import { loadConfig } from '../config.js';
-import { createPool } from '../database/db.js';
-import { PostgresPublicDataRepository } from '../database/repository.js';
+import { loadConfig } from '../config/index.js';
+import { createPool } from '../database/pool.js';
+import { PostgresPublicDataRepository } from '../database/repository/postgres.js';
 
 // Load application configuration (API, DB, etc.)
 const config = loadConfig();

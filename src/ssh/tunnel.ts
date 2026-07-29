@@ -9,8 +9,9 @@
  * Usage:
  *   node src/ssh/tunnel.ts
  */
-import { loadConfig } from '../config.js';
-import { ensureSshTunnel, waitForProcess } from './tunnel-manager.js';
+import { loadConfig } from '../config/index.js';
+import { waitForProcess } from './process.js';
+import { ensureSshTunnel } from './tunnel-manager.js';
 
 const config = loadConfig();
 
