@@ -15,8 +15,14 @@ import type { Readable } from 'node:stream';
 import type { Pool, PoolClient, QueryResultRow } from 'pg';
 import { to as copyTo } from 'pg-copy-streams';
 
-import type { availableRow, DownloadFilters } from '../api/consts.js';
-import { buildAvailableSql, buildApiGeneralCopySql, type DatabaseIdentifiers } from './sql.js';
+import type { AgencyId, availableRow, DownloadFilters } from '../api/consts.js';
+import {
+  buildAvailableRoutesSql,
+  buildAvailableSql,
+  buildAvailableTripsSql,
+  buildApiGeneralCopySql,
+  type DatabaseIdentifiers,
+} from './sql.js';
 
 /**
  * Repository interface for fetching, listing, and streaming API data.
@@ -44,6 +50,12 @@ export interface PublicDataRepository {
    */
   listAvailable(): Promise<readonly availableRow[]>;
 
+  /** List all distinct non-null route IDs. */
+  listAvailableRoutes(agencyId?: AgencyId): Promise<readonly string[]>;
+
+  /** List all distinct non-null trip IDs. */
+  listAvailableTrips(agencyId?: AgencyId): Promise<readonly string[]>;
+
   /**
    * Ping the database for liveness (throws if unreachable).
    */
@@ -52,6 +64,10 @@ export interface PublicDataRepository {
 
 /** Internal row type for Postgres listing. */
 interface DatabaseAvailableRow extends QueryResultRow, availableRow {}
+
+interface DatabaseAvailableValueRow extends QueryResultRow {
+  readonly value: string;
+}
 
 /**
  * Concrete Postgres implementation for the public data repository.
@@ -96,12 +112,29 @@ export class PostgresPublicDataRepository implements PublicDataRepository {
     return result.rows;
   }
 
+  async listAvailableRoutes(agencyId?: AgencyId): Promise<readonly string[]> {
+    return this.listAvailableValues(
+      buildAvailableRoutesSql(this.identifiers, agencyId),
+    );
+  }
+
+  async listAvailableTrips(agencyId?: AgencyId): Promise<readonly string[]> {
+    return this.listAvailableValues(
+      buildAvailableTripsSql(this.identifiers, agencyId),
+    );
+  }
+
   /**
    * Simple health check.
    * Throws if the database cannot be contacted.
    */
   async ping(): Promise<void> {
     await this.pool.query('SELECT 1');
+  }
+
+  private async listAvailableValues(sql: string): Promise<readonly string[]> {
+    const result = await this.pool.query<DatabaseAvailableValueRow>(sql);
+    return result.rows.map((row) => row.value);
   }
 
   /**

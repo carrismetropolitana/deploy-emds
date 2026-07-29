@@ -12,11 +12,17 @@ import type { PublicDataRepository } from '../database/repository.js';
 
 /**
  * Response format for the available data API.
- * - `data`: Distinct values available for each dataset field.
+ * - `available_data`: Distinct values available for each dataset field.
  * - `generated_at`: When the response was generated (ISO 8601).
  */
 export interface availableResponse {
-  readonly data: availableData;
+  readonly available_data: availableData;
+  readonly generated_at: string;
+}
+
+/** Response format for a dedicated available-values endpoint. */
+export interface availableValuesResponse {
+  readonly available_values: readonly string[];
   readonly generated_at: string;
 }
 
@@ -24,6 +30,12 @@ export interface availableResponse {
 interface AvailableCacheEntry {
   readonly expiresAt: number;
   readonly response: availableResponse;
+}
+
+/** Cache entry for a dedicated available-values list. */
+interface AvailableValuesCacheEntry {
+  readonly expiresAt: number;
+  readonly response: availableValuesResponse;
 }
 
 /**
@@ -102,7 +114,53 @@ export class AvailableService {
     // Note: Repository must provide `listAvailable` returning availableRow[]
     const rows = await this.repository.listAvailable();
     const response = {
-      data: organizeAvailable(rows),
+      available_data: organizeAvailable(rows),
+      generated_at: new Date(now).toISOString(),
+    };
+
+    this.cache = {
+      expiresAt: now + this.cacheTtlMilliseconds,
+      response,
+    };
+
+    return response;
+  }
+}
+
+/**
+ * Service for retrieving and caching one list of distinct available values.
+ */
+export class AvailableValuesService {
+  private cache: AvailableValuesCacheEntry | undefined;
+  private pending: Promise<availableValuesResponse> | undefined;
+
+  constructor(
+    private readonly loadValues: () => Promise<readonly string[]>,
+    private readonly cacheTtlMilliseconds: number,
+  ) {}
+
+  async list(): Promise<availableValuesResponse> {
+    const now = Date.now();
+    if (this.cache && this.cache.expiresAt > now) {
+      return this.cache.response;
+    }
+
+    if (this.pending) {
+      return this.pending;
+    }
+
+    this.pending = this.refresh(now);
+
+    try {
+      return await this.pending;
+    } finally {
+      this.pending = undefined;
+    }
+  }
+
+  private async refresh(now: number): Promise<availableValuesResponse> {
+    const response = {
+      available_values: await this.loadValues(),
       generated_at: new Date(now).toISOString(),
     };
 

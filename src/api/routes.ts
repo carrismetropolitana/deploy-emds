@@ -2,9 +2,9 @@ import type { Readable } from 'node:stream';
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { AvailableService } from './available.js';
+import {AvailableService,AvailableValuesService,type availableValuesResponse} from './available.js';
 import type { AppConfig } from '../config.js';
-import { AGENCY_IDS, REFERENCE_TYPES, type DownloadFilters } from './consts.js';
+import {AGENCY_IDS,REFERENCE_TYPES,type AgencyId,type DownloadFilters} from './consts.js';
 import { ServiceUnavailableError } from './errors.js';
 import type { PublicDataRepository } from '../database/repository.js';
 
@@ -12,6 +12,12 @@ interface RegisterRoutesOptions {
   readonly config: AppConfig;
   readonly repository: PublicDataRepository;
 }
+
+interface AvailableAgencyParams {
+  readonly agency_id: AgencyId;
+}
+
+type AvailableAgencyServices = ReadonlyMap<AgencyId, AvailableValuesService>;
 
 const errorSchema = {
   type: 'object',
@@ -26,6 +32,32 @@ const errorSchema = {
         code: { type: 'string' },
         message: { type: 'string' },
       },
+    },
+  },
+} as const;
+
+const availableValuesResponseSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['available_values', 'generated_at'],
+  properties: {
+    generated_at: { type: 'string', format: 'date-time' },
+    available_values: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+  },
+} as const;
+
+const availableAgencyParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['agency_id'],
+  properties: {
+    agency_id: {
+      type: 'string',
+      enum: AGENCY_IDS,
+      description: 'Carris Metropolitana operator area.',
     },
   },
 } as const;
@@ -161,9 +193,60 @@ async function createDownload(
   return reply.send(stream);
 }
 
+async function getAvailableValues(
+  service: AvailableValuesService,
+): Promise<availableValuesResponse> {
+  try {
+    return await service.list();
+  } catch (error) {
+    throw new ServiceUnavailableError('The database is temporarily unavailable', {
+      cause: error,
+    });
+  }
+}
+
+function getAvailableAgencyService(
+  services: AvailableAgencyServices,
+  agencyId: AgencyId,
+): AvailableValuesService {
+  const service = services.get(agencyId);
+  if (!service) {
+    throw new Error(`Available values service is missing for agency ${agencyId}`);
+  }
+
+  return service;
+}
+
 export async function registerRoutes(app: FastifyInstance, options: RegisterRoutesOptions): Promise<void> {
   const { config, repository } = options;
-  const availableService = new AvailableService(repository, config.availableCacheSeconds * 1_000);
+  const availableCacheTtlMilliseconds = config.availableCacheSeconds * 1_000;
+  const availableService = new AvailableService(repository, availableCacheTtlMilliseconds);
+  const availableRoutesService = new AvailableValuesService(
+    () => repository.listAvailableRoutes(),
+    availableCacheTtlMilliseconds,
+  );
+  const availableTripsService = new AvailableValuesService(
+    () => repository.listAvailableTrips(),
+    availableCacheTtlMilliseconds,
+  );
+  const availableRoutesByAgencyServices = new Map(
+    AGENCY_IDS.map((agencyId) => [
+      agencyId,
+      new AvailableValuesService(
+        () => repository.listAvailableRoutes(agencyId),
+        availableCacheTtlMilliseconds,
+      ),
+    ] as const),
+  );
+  const availableTripsByAgencyServices = new Map(
+    AGENCY_IDS.map((agencyId) => [
+      agencyId,
+      new AvailableValuesService(
+        () => repository.listAvailableTrips(agencyId),
+        availableCacheTtlMilliseconds,
+      ),
+    ] as const),
+  );
   const downloadRouteConfig = {
     rateLimit: {
       max: config.downloadRateLimitMax,
@@ -260,10 +343,10 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
           200: {
             type: 'object',
             additionalProperties: false,
-            required: ['data', 'generated_at'],
+            required: ['available_data', 'generated_at'],
             properties: {
               generated_at: { type: 'string', format: 'date-time' },
-              data: {
+              available_data: {
                 type: 'object',
                 additionalProperties: false,
                 required: ['yearmonth', 'agency_id', 'reference', 'disturbance_class'],
@@ -301,5 +384,81 @@ export async function registerRoutes(app: FastifyInstance, options: RegisterRout
         });
       }
     },
+  );
+
+  app.get(
+    '/api/available/routes',
+    {
+      schema: {
+        tags: ['Discovery'],
+        summary: 'List available route IDs',
+        response: {
+          200: availableValuesResponseSchema,
+          503: errorSchema,
+        },
+      },
+    },
+    async () => getAvailableValues(availableRoutesService),
+  );
+
+  app.get(
+    '/api/available/trips',
+    {
+      schema: {
+        tags: ['Discovery'],
+        summary: 'List available trip IDs',
+        response: {
+          200: availableValuesResponseSchema,
+          503: errorSchema,
+        },
+      },
+    },
+    async () => getAvailableValues(availableTripsService),
+  );
+
+  app.get<{ Params: AvailableAgencyParams }>(
+    '/api/available/routes/:agency_id',
+    {
+      schema: {
+        tags: ['Discovery'],
+        summary: 'List available route IDs for an agency',
+        params: availableAgencyParamsSchema,
+        response: {
+          200: availableValuesResponseSchema,
+          400: errorSchema,
+          503: errorSchema,
+        },
+      },
+    },
+    async (request) =>
+      getAvailableValues(
+        getAvailableAgencyService(
+          availableRoutesByAgencyServices,
+          request.params.agency_id,
+        ),
+      ),
+  );
+
+  app.get<{ Params: AvailableAgencyParams }>(
+    '/api/available/trips/:agency_id',
+    {
+      schema: {
+        tags: ['Discovery'],
+        summary: 'List available trip IDs for an agency',
+        params: availableAgencyParamsSchema,
+        response: {
+          200: availableValuesResponseSchema,
+          400: errorSchema,
+          503: errorSchema,
+        },
+      },
+    },
+    async (request) =>
+      getAvailableValues(
+        getAvailableAgencyService(
+          availableTripsByAgencyServices,
+          request.params.agency_id,
+        ),
+      ),
   );
 }
