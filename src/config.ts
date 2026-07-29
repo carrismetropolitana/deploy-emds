@@ -164,7 +164,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     ),
     availableCacheSeconds: getInteger(
       environment,
-      'available_CACHE_SECONDS',
+      'AVAILABLE_CACHE_SECONDS',
       300,
       0,
     ),
