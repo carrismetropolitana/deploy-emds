@@ -14,17 +14,19 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     throw new Error('DATABASE_URL is required');
   }
 
+  const environmentName =
+    environment.NODE_ENV?.trim() ||
+    environment.ENVIRONMENT?.trim() ||
+    'development';
+  const nodeEnv =
+    environmentName === 'dev' ? 'development' : environmentName;
+  const isDevelopment = nodeEnv === 'development';
+
   return {
     apiTable: getIdentifierPath(
       environment,
       'DB_API_TABLE',
       'mobilidade.api_general',
-    ),
-    availableCacheSeconds: getInteger(
-      environment,
-      'AVAILABLE_CACHE_SECONDS',
-      300,
-      0,
     ),
     databaseConnectionTimeoutMs: getInteger(
       environment,
@@ -38,24 +40,27 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       30_000,
       1,
     ),
-    databaseJumpServer:
-      environment.TUNNEL_JUMPSERVER?.trim() ||
-      environment.DATABASE_JUMPSERVER?.trim() ||
-      undefined,
+    databaseJumpServer: isDevelopment
+      ? environment.TUNNEL_JUMPSERVER?.trim() ||
+        environment.DATABASE_JUMPSERVER?.trim() ||
+        undefined
+      : undefined,
     databaseName: environment.DATABASE_NAME?.trim() || 'emds',
     databasePassword:
       environment.DATABASE_PASSWORD ?? environment.PGPASSWORD,
     databasePoolMax: getInteger(environment, 'DB_POOL_MAX', 4, 1),
     databasePort: getInteger(environment, 'DATABASE_PORT', 5_432, 1),
-    databaseSshPrivateKey:
-      environment.TUNNEL_PRIVATE_KEY_PATH?.trim() ||
-      environment.DATABASE_SSH_PRIVATE_KEY?.trim() ||
-      undefined,
-    databaseSshUser:
-      environment.TUNNEL_USER?.trim() ||
-      environment.DATABASE_SSH_USER?.trim() ||
-      environment.DATABASE_USER?.trim() ||
-      '',
+    databaseSshPrivateKey: isDevelopment
+      ? environment.TUNNEL_PRIVATE_KEY_PATH?.trim() ||
+        environment.DATABASE_SSH_PRIVATE_KEY?.trim() ||
+        undefined
+      : undefined,
+    databaseSshUser: isDevelopment
+      ? environment.TUNNEL_USER?.trim() ||
+        environment.DATABASE_SSH_USER?.trim() ||
+        environment.DATABASE_USER?.trim() ||
+        ''
+      : '',
     databaseSsl: getBoolean(environment, 'DATABASE_SSL', false),
     databaseSslRejectUnauthorized: getBoolean(
       environment,
@@ -74,26 +79,11 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     databaseUrl,
     databaseUser:
       environment.DATABASE_USER?.trim() ||
-      environment.TUNNEL_USER?.trim() ||
+      (isDevelopment ? environment.TUNNEL_USER?.trim() : undefined) ||
       '',
-    downloadCacheSeconds: getInteger(
-      environment,
-      'DOWNLOAD_CACHE_SECONDS',
-      3_600,
-      0,
-    ),
-    downloadRateLimitMax: getInteger(
-      environment,
-      'DOWNLOAD_RATE_LIMIT_MAX',
-      6,
-      1,
-    ),
     host: environment.HOST?.trim() || '0.0.0.0',
     logLevel: environment.LOG_LEVEL?.trim() || 'info',
-    nodeEnv:
-      environment.NODE_ENV?.trim() ||
-      environment.ENVIRONMENT?.trim() ||
-      'development',
+    nodeEnv,
     port: getInteger(environment, 'PORT', 3_000, 1),
     referenceColumn: getIdentifier(
       environment,

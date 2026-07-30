@@ -10,7 +10,6 @@
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig.json",
     "clean": "rm -rf dist",
-    "db:tunnel": "node --import tsx src/ssh/tunnel.ts",
     "dev": "node --import tsx src/launcher.ts --watch",
     "start": "node --enable-source-maps dist/launcher.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -19,6 +18,7 @@
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^11.1.0",
     "@fastify/swagger": "^9.8.1",
+    "@tmlmobilidade/ssh": "20260730.1037.5",
     "fastify": "^5.10.0",
     "pg": "^8.22.0",
     "pg-copy-streams": "^7.0.0"

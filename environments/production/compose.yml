@@ -2,10 +2,6 @@
 
 name: deploy-emds
 
-secrets:
-  tunnel-private-key:
-    file: ./secrets/tunnel-private-key.key
-
 services:
 
   nginx:
@@ -47,9 +43,5 @@ services:
       - ./secrets/.env
     environment:
       HOST: 0.0.0.0
+      NODE_ENV: production
       PORT: 6192
-      TUNNEL_PRIVATE_KEY_PATH: /run/secrets/tunnel-private-key.key
-    secrets:
-      - source: tunnel-private-key
-        target: tunnel-private-key.key
-        mode: 0400

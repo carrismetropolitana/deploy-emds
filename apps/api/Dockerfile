@@ -47,8 +47,6 @@ ENV PORT=6192
 
 WORKDIR /app
 
-RUN apk add --no-cache openssh-client
-
 COPY --from=pruner /app/out/json/ .
 
 RUN npm ci --omit=dev --ignore-scripts \

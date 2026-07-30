@@ -40,6 +40,7 @@ services:
       - ./secrets/.env
     environment:
       HOST: 0.0.0.0
+      NODE_ENV: development
       PORT: 6192
       TUNNEL_PRIVATE_KEY_PATH: /run/secrets/tunnel-private-key.key
     ports:

@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 
-import type { AppConfig } from '../../config/index.js';
 import type { PublicDataRepository } from '../../database/repository/types.js';
 import { AGENCY_IDS, type AgencyId } from '../../domain/consts.js';
 import { ServiceUnavailableError } from '../errors.js';
@@ -9,7 +8,6 @@ import { availableAgencyParamsSchema, availableResponseSchema, availableValuesRe
 import { errorSchema } from '../schemas/common.js';
 
 interface AvailableRoutesOptions {
-  readonly config: AppConfig;
   readonly repository: PublicDataRepository;
 }
 
@@ -57,8 +55,8 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   //
   // Extract the configuration and repository
   
-  const { config, repository } = options;
-  const cacheTtlMilliseconds = config.availableCacheSeconds * 1_000;
+  const { repository } = options;
+  const cacheTtlMilliseconds = 300_000;
   const availableService = new AvailableService(
     repository,
     cacheTtlMilliseconds,

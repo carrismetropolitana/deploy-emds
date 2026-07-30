@@ -3,14 +3,14 @@
  *
  * - Sets up an SSH tunnel as required by the current configuration.
  * - Starts the API server, either in watch mode (for development) or production mode.
- * - Handles clean shutdown on SIGINT/SIGTERM, ensuring both subprocesses exit gracefully.
+ * - Handles clean shutdown on SIGINT/SIGTERM for the server and tunnel.
  */
 
 import { spawn } from 'node:child_process';
 
 import { loadConfig } from './config/index.js';
-import { waitForProcess } from './ssh/process.js';
-import { ensureSshTunnel } from './ssh/tunnel-manager.js';
+import { createDatabaseTunnel } from './database/tunnel.js';
+import { waitForProcess } from './process.js';
 
 // Load application configuration from environment
 const config = loadConfig();
@@ -18,9 +18,9 @@ const config = loadConfig();
 // Determine if "watch" mode (for development) is enabled via the command line
 const watch = process.argv.includes('--watch');
  
-// Ensure SSH tunnel is established (as required by config).
-// The function returns a ChildProcess if tunneling is needed, or undefined.
-const tunnel = await ensureSshTunnel(config, true);
+// SSH tunneling is only used for local development.
+const tunnel = await createDatabaseTunnel(config);
+await tunnel?.connect();
 
 // Compose the arguments for starting the API server.
 // - In watch mode, use tsx loader and watch for changes in source files.
@@ -39,7 +39,7 @@ const server = spawn(process.execPath, serverArguments, {
 let stopping = false;
 
 /**
- * Graceful shutdown handler, kills both server and tunnel subprocesses.
+ * Graceful shutdown handler for the API server.
  * @param signal The signal causing the shutdown (e.g., 'SIGINT', 'SIGTERM')
  */
 function stop(signal: NodeJS.Signals): void {
@@ -48,7 +48,6 @@ function stop(signal: NodeJS.Signals): void {
   }
   stopping = true;
   server.kill(signal);
-  tunnel?.kill(signal);
 }
 
 // Listen for SIGINT and SIGTERM to trigger orderly shutdown
@@ -58,10 +57,7 @@ process.once('SIGTERM', () => stop('SIGTERM'));
 // Wait for the API server process to exit, capturing its exit code
 const exitCode = await waitForProcess(server);
 
-// If an SSH tunnel was started and is still running, ensure it is killed
-if (tunnel && tunnel.exitCode === null) {
-  tunnel.kill('SIGTERM');
-}
+await tunnel?.disconnect();
 
 // Set process exit code to match that of the API server
 process.exitCode = exitCode;

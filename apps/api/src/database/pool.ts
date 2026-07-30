@@ -7,7 +7,9 @@ export function createPool(config: AppConfig): Pool {
     config.databaseUrl.startsWith('postgres://') ||
     config.databaseUrl.startsWith('postgresql://');
   const usesSshTunnel =
-    !isConnectionString && config.databaseJumpServer !== undefined;
+    config.nodeEnv === 'development' &&
+    !isConnectionString &&
+    config.databaseJumpServer !== undefined;
   const connection = isConnectionString
     ? { connectionString: config.databaseUrl }
     : {

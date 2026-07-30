@@ -64,7 +64,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     },
   });
 
-  await registerRoutes(app, { config, repository });
+  await registerRoutes(app, { repository });
 
   app.get(
     '/docs',

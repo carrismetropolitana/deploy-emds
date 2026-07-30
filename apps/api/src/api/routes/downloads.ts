@@ -4,7 +4,6 @@ import type {
   FastifyRequest,
 } from 'fastify';
 
-import type { AppConfig } from '../../config/index.js';
 import type {
   CsvDownloadStream,
   PublicDataRepository,
@@ -18,7 +17,6 @@ import {
 } from '../schemas/downloads.js';
 
 interface DownloadRoutesOptions {
-  readonly config: AppConfig;
   readonly repository: PublicDataRepository;
 }
 
@@ -87,7 +85,6 @@ async function streamDownload(
   request: FastifyRequest<{ Querystring: DownloadFilters }>,
   reply: FastifyReply,
   repository: PublicDataRepository,
-  cacheSeconds: number,
 ): Promise<FastifyReply> {
   if (hasInvalidRange(request.query)) {
     return sendInvalidRange(reply);
@@ -115,7 +112,7 @@ async function streamDownload(
 
   reply
     .code(200)
-    .header('Cache-Control', `public, max-age=${cacheSeconds}`)
+    .header('Cache-Control', 'public, max-age=3600')
     .header(
       'Content-Disposition',
       `attachment; filename="${downloadFilename(request.query)}"`,
@@ -131,10 +128,10 @@ export function registerDownloadRoutes(
   app: FastifyInstance,
   options: DownloadRoutesOptions,
 ): void {
-  const { config, repository } = options;
+  const { repository } = options;
   const routeConfig = {
     rateLimit: {
-      max: config.downloadRateLimitMax,
+      max: 6,
       timeWindow: 60_000,
     },
   };
@@ -185,12 +182,6 @@ export function registerDownloadRoutes(
         },
       },
     },
-    async (request, reply) =>
-      streamDownload(
-        request,
-        reply,
-        repository,
-        config.downloadCacheSeconds,
-      ),
+    async (request, reply) => streamDownload(request, reply, repository),
   );
 }

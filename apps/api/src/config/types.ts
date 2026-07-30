@@ -1,6 +1,5 @@
 export interface AppConfig {
   readonly apiTable: string;
-  readonly availableCacheSeconds: number;
   readonly databaseConnectionTimeoutMs: number;
   readonly databaseIdleTimeoutMs: number;
   readonly databaseJumpServer: string | undefined;
@@ -16,8 +15,6 @@ export interface AppConfig {
   readonly databaseTunnelPort: number;
   readonly databaseUrl: string;
   readonly databaseUser: string;
-  readonly downloadCacheSeconds: number;
-  readonly downloadRateLimitMax: number;
   readonly host: string;
   readonly logLevel: string;
   readonly nodeEnv: string;
