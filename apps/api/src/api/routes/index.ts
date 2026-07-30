@@ -9,10 +9,7 @@ interface RegisterRoutesOptions {
   readonly repository: PublicDataRepository;
 }
 
-export function registerRoutes(
-  app: FastifyInstance,
-  options: RegisterRoutesOptions,
-): void {
+export function registerRoutes( app: FastifyInstance, options: RegisterRoutesOptions ): void {
   registerSystemRoutes(app, options.repository);
   registerDownloadRoutes(app, options);
   registerAvailableRoutes(app, options);

@@ -64,7 +64,13 @@ Inclusive range example:
 GET /api?yearmonth_from=202605&yearmonth_to=202606&agency_id=41&reference=planned
 ```
 
-Large responses may be paginated.
+The normal URL returns the applied filters and matching row count. Append
+`/download` to the end of the complete URL to stream the matching rows directly
+to one CSV file:
+
+```http
+GET /api?yearmonth=202606&agency_id=42/download
+```
 
 ## Discovery (optional)
 

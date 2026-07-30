@@ -1,24 +1,17 @@
-import type {
-  FastifyInstance,
-  FastifyReply,
-  FastifyRequest,
-} from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import type {
-  CsvDownloadStream,
-  PublicDataRepository,
-} from '../../database/repository/types.js';
+import type { CsvDownloadStream, PublicDataRepository } from '../../database/repository/types.js';
 import type { DownloadFilters } from '../../domain/consts.js';
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema } from '../schemas/common.js';
-import {
-  downloadMetadataResponseSchema,
-  downloadQuerySchema,
-} from '../schemas/downloads.js';
+import { downloadMetadataResponseSchema, downloadQuerySchema } from '../schemas/downloads.js';
 
 interface DownloadRoutesOptions {
   readonly repository: PublicDataRepository;
 }
+
+const DOWNLOAD_SUFFIX = '/download';
+const downloadRequests = new WeakSet<FastifyRequest>();
 
 function downloadPeriod(filters: DownloadFilters): string {
   if (filters.yearmonth !== undefined) {
@@ -55,11 +48,7 @@ function sendInvalidRange(reply: FastifyReply): FastifyReply {
   });
 }
 
-async function getDownloadMetadata(
-  request: FastifyRequest<{ Querystring: DownloadFilters }>,
-  reply: FastifyReply,
-  repository: PublicDataRepository,
-): Promise<
+async function getDownloadMetadata( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<
   FastifyReply | {
     readonly filters: DownloadFilters;
     readonly rows: number;
@@ -81,11 +70,7 @@ async function getDownloadMetadata(
   }
 }
 
-async function streamDownload(
-  request: FastifyRequest<{ Querystring: DownloadFilters }>,
-  reply: FastifyReply,
-  repository: PublicDataRepository,
-): Promise<FastifyReply> {
+async function streamDownload( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<FastifyReply> {
   if (hasInvalidRange(request.query)) {
     return sendInvalidRange(reply);
   }
@@ -124,10 +109,7 @@ async function streamDownload(
   return reply.send(stream);
 }
 
-export function registerDownloadRoutes(
-  app: FastifyInstance,
-  options: DownloadRoutesOptions,
-): void {
+export function registerDownloadRoutes( app: FastifyInstance, options: DownloadRoutesOptions ): void {
   const { repository } = options;
   const routeConfig = {
     rateLimit: {
@@ -140,41 +122,47 @@ export function registerDownloadRoutes(
     '/api',
     {
       config: routeConfig,
-      schema: {
-        tags: ['Downloads'],
-        summary: 'Show filtered dataset metadata',
-        description:
-          'Returns the applied filters and number of matching rows.',
-        querystring: downloadQuerySchema,
-        produces: ['application/json'],
-        response: {
-          200: downloadMetadataResponseSchema,
-          400: errorSchema,
-          429: errorSchema,
-          503: errorSchema,
-        },
-      },
-    },
-    async (request, reply) =>
-      getDownloadMetadata(request, reply, repository),
-  );
+      preValidation: async (request) => {
+        if (!request.raw.url?.endsWith(DOWNLOAD_SUFFIX)) {
+          return;
+        }
 
-  app.get<{ Querystring: DownloadFilters }>(
-    '/api/download',
-    {
-      config: routeConfig,
+        const mutableQuery = request.query as unknown as Record<
+          string,
+          string
+        >;
+
+        for (const [key, value] of Object.entries(mutableQuery)) {
+          if (
+            typeof value === 'string' &&
+            value.endsWith(DOWNLOAD_SUFFIX)
+          ) {
+            mutableQuery[key] = value.slice(
+              0,
+              -DOWNLOAD_SUFFIX.length,
+            );
+            downloadRequests.add(request);
+            return;
+          }
+        }
+      },
       schema: {
         tags: ['Downloads'],
-        summary: 'Download filtered road-link data as CSV',
+        summary: 'Show metadata or download the filtered CSV',
         description:
-          'Streams matching mobilidade.api_general rows directly from PostgreSQL.',
+          'Returns JSON metadata normally. Append /download after the query to download the CSV.',
         querystring: downloadQuerySchema,
-        produces: ['text/csv'],
+        produces: ['application/json', 'text/csv'],
         response: {
           200: {
-            type: 'string',
-            contentMediaType: 'text/csv',
-            description: 'CSV download stream.',
+            oneOf: [
+              downloadMetadataResponseSchema,
+              {
+                type: 'string',
+                contentMediaType: 'text/csv',
+                description: 'CSV download stream.',
+              },
+            ],
           },
           400: errorSchema,
           429: errorSchema,
@@ -182,6 +170,13 @@ export function registerDownloadRoutes(
         },
       },
     },
-    async (request, reply) => streamDownload(request, reply, repository),
+    async (request, reply) => {
+      if (downloadRequests.has(request)) {
+        return streamDownload(request, reply, repository);
+      }
+
+      return getDownloadMetadata(request, reply, repository);
+    },
   );
+
 }

@@ -4,10 +4,7 @@ import type { PublicDataRepository } from '../../database/repository/types.js';
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema, statusSchema } from '../schemas/common.js';
 
-export function registerSystemRoutes(
-  app: FastifyInstance,
-  repository: PublicDataRepository,
-): void {
+export function registerSystemRoutes( app: FastifyInstance, repository: PublicDataRepository ): void {
   app.get(
     '/health',
     {
