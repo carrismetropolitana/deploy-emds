@@ -24,7 +24,7 @@ services:
     ports:
       - 6191:80
     depends_on:
-      server:
+      api:
         condition: service_healthy
 
   # # # # # # # # # # # # # # # # # # # # #

@@ -5,11 +5,11 @@
   "scripts": {
     "build": "turbo run build",
     "check": "npm run typecheck && npm run build",
-    "db:tunnel": "dotenv-run -f ./environments/development/secrets/.env -- turbo run db:tunnel --filter=@carrismetropolitana/deploy-emds-server",
-    "dev": "npm run dev:server",
-    "dev:server": "dotenv-run -f ./environments/development/secrets/.env -- turbo run dev --filter=@carrismetropolitana/deploy-emds-server",
+    "db:tunnel": "dotenv-run -f ./environments/development/secrets/.env -- turbo run db:tunnel --filter=@carrismetropolitana/deploy-emds-api",
+    "dev": "npm run dev:api",
+    "dev:api": "dotenv-run -f ./environments/development/secrets/.env -- turbo run dev --filter=@carrismetropolitana/deploy-emds-api",
     "rinse": "npx --yes @tmlmobilidade/repo-rinse",
-    "start": "npm run start --workspace @carrismetropolitana/deploy-emds-server",
+    "start": "npm run start --workspace @carrismetropolitana/deploy-emds-api",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {

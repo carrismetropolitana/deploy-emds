@@ -1,5 +1,5 @@
 {
-  "name": "@carrismetropolitana/deploy-emds-server",
+  "name": "@carrismetropolitana/deploy-emds-api",
   "version": "1.0.0",
   "private": true,
   "description": "Public streaming API for DeployEMDS road-link datasets",

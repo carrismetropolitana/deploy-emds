@@ -22,15 +22,15 @@ services:
     ports:
       - 6191:80
     depends_on:
-      server:
+      api:
         condition: service_healthy
 
   # # # # # # # # # # # # # # # # # # # # #
 
-  server:
+  api:
     build:
       context: ../..
-      dockerfile: apps/server/Dockerfile
+      dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     logging:
       options:

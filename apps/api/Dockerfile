@@ -58,7 +58,7 @@ COPY --from=builder \
   /app/apps/${MODULE}/dist \
   ./apps/${MODULE}/dist
 
-WORKDIR /app/apps/server
+WORKDIR /app/apps/${MODULE}
 
 EXPOSE 6192
 
