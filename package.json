@@ -1,20 +1,23 @@
 {
-  "name": "deploy-emds",
+  "name": "@carrismetropolitana/deploy-emds",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/server"
-  ],
   "scripts": {
-    "build": "npm run build --workspace @carrismetropolitana/deploy-emds-server",
+    "build": "turbo run build",
     "check": "npm run typecheck && npm run build",
-    "db:tunnel": "npm run db:tunnel --workspace @carrismetropolitana/deploy-emds-server",
-    "dev": "npm run dev --workspace @carrismetropolitana/deploy-emds-server",
-    "repo:rinse": "npx --yes @tmlmobilidade/repo-rinse",
+    "db:tunnel": "dotenv-run -f ./environments/development/secrets/.env -- turbo run db:tunnel --filter=@carrismetropolitana/deploy-emds-server",
+    "dev": "npm run dev:server",
+    "dev:server": "dotenv-run -f ./environments/development/secrets/.env -- turbo run dev --filter=@carrismetropolitana/deploy-emds-server",
+    "rinse": "npx --yes @tmlmobilidade/repo-rinse",
     "start": "npm run start --workspace @carrismetropolitana/deploy-emds-server",
-    "typecheck": "npm run typecheck --workspace @carrismetropolitana/deploy-emds-server"
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
-  }
+    "@dotenv-run/cli": "^1.3.6",
+    "turbo": "^2.9.6"
+  },
+  "packageManager": "npm@11.11.0",
+  "workspaces": [
+    "apps/*"
+  ]
 }

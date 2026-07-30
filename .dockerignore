@@ -2,5 +2,8 @@
 .env
 node_modules
 dist
+.turbo
 coverage
 *.log
+*.key
+environments/**/secrets/**

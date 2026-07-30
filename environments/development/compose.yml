@@ -1,0 +1,50 @@
+# # #
+
+name: deploy-emds-local
+
+secrets:
+  tunnel-private-key:
+    file: ./secrets/tunnel-private-key.key
+
+services:
+
+  # # # # # # # # # # # # # # # # # # # # #
+
+  nginx:
+    build:
+      context: ../..
+      dockerfile: apps/nginx/Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    ports:
+      - 6191:80
+    depends_on:
+      server:
+        condition: service_healthy
+
+  # # # # # # # # # # # # # # # # # # # # #
+
+  server:
+    build:
+      context: ../..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    env_file:
+      - ./secrets/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 6192
+      TUNNEL_PRIVATE_KEY_PATH: /run/secrets/tunnel-private-key.key
+    ports:
+      - 6192:6192
+    secrets:
+      - source: tunnel-private-key
+        target: tunnel-private-key.key
+        mode: 0400

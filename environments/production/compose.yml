@@ -1,0 +1,55 @@
+# # #
+
+name: deploy-emds
+
+secrets:
+  tunnel-private-key:
+    file: ./secrets/tunnel-private-key.key
+
+services:
+
+  nginx:
+    image: ghcr.io/carrismetropolitana/deploy-emds-nginx:latest
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+      resources:
+        limits:
+          memory: 1gb
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    ports:
+      - 6191:80
+    depends_on:
+      server:
+        condition: service_healthy
+
+  # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # #
+
+  api:
+    image: ghcr.io/carrismetropolitana/deploy-emds-api:latest
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+      resources:
+        limits:
+          memory: 1gb
+    logging:
+      options:
+        max-size: '1m'
+        max-file: '1'
+    env_file:
+      - ./secrets/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 6192
+      TUNNEL_PRIVATE_KEY_PATH: /run/secrets/tunnel-private-key.key
+    secrets:
+      - source: tunnel-private-key
+        target: tunnel-private-key.key
+        mode: 0400
