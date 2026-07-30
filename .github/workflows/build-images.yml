@@ -40,7 +40,7 @@ jobs:
   # # # # # # # # # # # # # # # # # # # # #
   # # # # # # # # # # # # # # # # # # # # #
 
-  server:
+  api:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,14 +57,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push server image
+      - name: Build and push api image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./apps/server/Dockerfile
+          file: ./apps/api/Dockerfile
           push: true
-          cache-from: type=gha,scope=server
-          cache-to: type=gha,mode=max,scope=server
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
           tags: |
-            ghcr.io/carrismetropolitana/deploy-emds-server:latest
-            ghcr.io/carrismetropolitana/deploy-emds-server:${{ github.sha }}
+            ghcr.io/carrismetropolitana/deploy-emds-api:latest
+            ghcr.io/carrismetropolitana/deploy-emds-api:${{ github.sha }}
