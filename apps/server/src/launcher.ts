@@ -26,8 +26,8 @@ const tunnel = await ensureSshTunnel(config, true);
 // - In watch mode, use tsx loader and watch for changes in source files.
 // - In production mode, run built JS (with source maps enabled).
 const serverArguments = watch
-  ? ['--env-file=.env', '--import', 'tsx', '--watch', 'src/api/server.ts']
-  : ['--env-file=.env', '--enable-source-maps', 'dist/api/server.js'];
+  ? ['--import', 'tsx', '--watch', 'src/api/server.ts']
+  : ['--enable-source-maps', 'dist/api/server.js'];
 
 // Spawn the API server as a child process, inheriting stdio for seamless console logging.
 const server = spawn(process.execPath, serverArguments, {
