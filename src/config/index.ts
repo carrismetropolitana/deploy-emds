@@ -48,7 +48,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     databasePoolMax: getInteger(environment, 'DB_POOL_MAX', 4, 1),
     databasePort: getInteger(environment, 'DATABASE_PORT', 5_432, 1),
     databaseSshPrivateKey:
-      environment.TUNNEL_PRIVATE_KEY?.trim() ||
+      environment.TUNNEL_PRIVATE_KEY_PATH?.trim() ||
       environment.DATABASE_SSH_PRIVATE_KEY?.trim() ||
       undefined,
     databaseSshUser:
