@@ -55,13 +55,13 @@ month (`yearmonth`) or an inclusive month range (`yearmonth_from` and
 Single-month example:
 
 ```http
-GET /api?yearmonth=202605&agency_id=41&reference=planned
+GET /disturbance?yearmonth=202605&agency_id=41&reference=planned
 ```
 
 Inclusive range example:
 
 ```http
-GET /api?yearmonth_from=202605&yearmonth_to=202606&agency_id=41&reference=planned
+GET /disturbance?yearmonth_from=202605&yearmonth_to=202606&agency_id=41&reference=planned
 ```
 
 The normal URL returns the applied filters and matching row count. Append
@@ -69,7 +69,7 @@ The normal URL returns the applied filters and matching row count. Append
 to one CSV file:
 
 ```http
-GET /api?yearmonth=202606&agency_id=42/download
+GET /disturbance?yearmonth=202606&agency_id=42/download
 ```
 
 ## Discovery (optional)

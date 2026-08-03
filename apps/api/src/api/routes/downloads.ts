@@ -119,7 +119,7 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
   };
 
   app.get<{ Querystring: DownloadFilters }>(
-    '/api',
+    '/disturbance',
     {
       config: routeConfig,
       preValidation: async (request) => {

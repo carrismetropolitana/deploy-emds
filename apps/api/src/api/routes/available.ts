@@ -79,7 +79,7 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   );
 
   app.get(
-    '/api/available',
+    '/disturbance/available',
     {
       schema: {
         tags: ['Discovery'],
@@ -103,7 +103,7 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   );
 
   app.get(
-    '/api/available/routes',
+    '/disturbance/available/routes',
     {
       schema: {
         tags: ['Discovery'],
@@ -118,7 +118,7 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   );
 
   app.get(
-    '/api/available/trips',
+    '/disturbance/available/trips',
     {
       schema: {
         tags: ['Discovery'],
@@ -133,7 +133,7 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   );
 
   app.get<{ Params: AvailableAgencyParams }>(
-    '/api/available/routes/:agency_id',
+    '/disturbance/available/routes/:agency_id',
     {
       schema: {
         tags: ['Discovery'],
@@ -153,7 +153,7 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   );
 
   app.get<{ Params: AvailableAgencyParams }>(
-    '/api/available/trips/:agency_id',
+    '/disturbance/available/trips/:agency_id',
     {
       schema: {
         tags: ['Discovery'],
