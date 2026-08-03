@@ -18,9 +18,9 @@ echo ">>> Cleaning letsencrypt directory..."
 sudo rm -Rf "./letsencrypt/"
 
 echo ">>> Downloading recommended TLS parameters ..."
-mkdir -p "./letsencrypt"https://raw.githubusercontent.com/certbot/certbot/main/certbot/src/certbot/_internal/plugins/nginx/tls_configs/options-ssl-nginx.conf
-curl -s  > "./letsencrypt/options-ssl-nginx.conf"
-curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/src/certbot/ssl-dhparams.pem > "./letsencrypt/ssl-dhparams.pem"
+mkdir -p "./letsencrypt"
+curl -s https://raw.githubusercontent.com/certbot/certbot/main/certbot/src/certbot/_internal/plugins/nginx/tls_configs/options-ssl-nginx.conf > "./letsencrypt/options-ssl-nginx.conf"
+curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/src/certbot/ssl-dhparams.pem> "./letsencrypt/ssl-dhparams.pem"
 echo
 
 echo ">>> Creating dummy certificate for "$primary_domain"..."
