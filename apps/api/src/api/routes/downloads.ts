@@ -1,11 +1,11 @@
 import { ZipArchive } from 'archiver';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import type { CsvDownloadStream, PublicDataRepository } from '../../database/repository/types.js';
+import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from '../../database/repository/types.js';
 import type { DownloadFilters } from '../../domain/consts.js';
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema } from '../schemas/common.js';
-import { downloadFilterHelpResponseSchema, downloadMetadataResponseSchema, downloadQuerySchema } from '../schemas/downloads.js';
+import { downloadFilterHelpResponseSchema, downloadJobResponseSchema, downloadMetadataResponseSchema, downloadQuerySchema } from '../schemas/downloads.js';
 import { sendFilterHelp } from '../welcome.js';
 
 interface DownloadRoutesOptions {
@@ -164,7 +164,16 @@ async function queueDownload(
   reply: FastifyReply,
   repository: PublicDataRepository,
 ): Promise<FastifyReply> {
-  const job = await repository.enqueueApiGeneralDownload(request.query);
+  let job: DownloadJob;
+  try {
+    job = await repository.enqueueApiGeneralDownload(request.query);
+  } catch (error) {
+    throw new ServiceUnavailableError(
+      'The download service is temporarily unavailable',
+      { cause: error },
+    );
+  }
+
   return reply.code(job.status === 'completed' ? 200 : 202).send({
     job_id: job.id,
     status: job.status,
@@ -223,6 +232,7 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
             oneOf: [
               downloadMetadataResponseSchema,
               downloadFilterHelpResponseSchema,
+              downloadJobResponseSchema,
               {
                 type: 'string',
                 contentMediaType: 'application/zip',
@@ -230,6 +240,7 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
               },
             ],
           },
+          202: downloadJobResponseSchema,
           400: errorSchema,
           429: errorSchema,
           503: errorSchema,
@@ -255,15 +266,12 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
       config: routeConfig,
       schema: {
         tags: ['Downloads'],
-        summary: 'Download the filtered CSV as a ZIP archive',
+        summary: 'Create or reuse a filtered download job',
         querystring: downloadQuerySchema,
-        produces: ['application/zip'],
+        produces: ['application/json'],
         response: {
-          200: {
-            type: 'string',
-            contentMediaType: 'application/zip',
-            description: 'ZIP archive containing the CSV download.',
-          },
+          200: downloadJobResponseSchema,
+          202: downloadJobResponseSchema,
           400: errorSchema,
           429: errorSchema,
           503: errorSchema,

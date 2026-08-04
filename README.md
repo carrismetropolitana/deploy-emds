@@ -120,9 +120,6 @@ only after the complete CSV has been flushed successfully.
 | `completed` | The CSV is ready |
 | `failed` | Generation failed; inspect `error` |
 
-If the API restarts while a job is `processing`, the job is automatically
-returned to `queued` and the CSV is generated again from the beginning.
-
 Open the status URL again while the status is `queued` or `processing`.
 
 ## 4. Download the ZIP

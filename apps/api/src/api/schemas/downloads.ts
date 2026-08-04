@@ -69,6 +69,35 @@ export const downloadMetadataResponseSchema = {
   },
 } as const;
 
+export const downloadJobResponseSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'job_id',
+    'status',
+    'rows',
+    'processed_rows',
+    'remaining_rows',
+    'status_url',
+  ],
+  properties: {
+    job_id: { type: 'string', minLength: 1 },
+    status: {
+      type: 'string',
+      enum: ['queued', 'processing', 'completed', 'failed'],
+    },
+    rows: {
+      anyOf: [
+        { type: 'integer', minimum: 0 },
+        { type: 'null' },
+      ],
+    },
+    processed_rows: { type: 'integer', minimum: 0 },
+    remaining_rows: { type: 'integer', minimum: 0 },
+    status_url: { type: 'string', minLength: 1 },
+  },
+} as const;
+
 export const downloadFilterHelpResponseSchema = {
   type: 'object',
   additionalProperties: false,

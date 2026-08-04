@@ -14,10 +14,12 @@ type CsvRow = Record<string, string>;
 
 const PROGRESS_UPDATE_BATCH_SIZE = 1_000;
 
-function cacheKey(filters: DownloadFilters): string {
+function serializeFilters(filters: DownloadFilters): string {
   return JSON.stringify(
-    Object.entries(filters).sort(([left], [right]) =>
-      left.localeCompare(right),
+    Object.fromEntries(
+      Object.entries(filters).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
     ),
   );
 }
@@ -42,7 +44,6 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
 
   startQueue(): void {
     if (this.queueTimer !== undefined) return;
-    this.cache.recoverInterruptedJobs();
     this.queueTimer = setInterval(() => {
       void this.processNextJob();
     }, 250);
@@ -57,17 +58,40 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
   }
 
   async enqueueApiGeneralDownload(filters: DownloadFilters): Promise<DownloadJob> {
-    const key = cacheKey(filters);
-    const existing = this.cache.getJobByCacheKey(key);
+    const serializedFilters = serializeFilters(filters);
+    const existing = this.cache.getJobByFilters(serializedFilters);
     if (existing !== undefined && existing.status !== 'failed') {
       return this.toDownloadJob(existing);
     }
 
     const rowCount = await this.upstream.countApiGeneralDownload(filters);
-    const job = existing === undefined
-      ? this.cache.createJob(randomUUID(), key, JSON.stringify(filters), rowCount)
-      : this.cache.retryJob(existing.id, JSON.stringify(filters), rowCount);
-    return this.toDownloadJob(job);
+    const latest = this.cache.getJobByFilters(serializedFilters);
+    if (latest !== undefined) {
+      if (latest.status !== 'failed') {
+        return this.toDownloadJob(latest);
+      }
+      return this.toDownloadJob(
+        this.cache.retryJob(latest.id, serializedFilters, rowCount),
+      );
+    }
+
+    try {
+      const job = this.cache.createJob(
+        randomUUID(),
+        randomUUID(),
+        serializedFilters,
+        rowCount,
+      );
+      return this.toDownloadJob(job);
+    } catch (error) {
+      // Another identical request may have inserted the filters while this
+      // request was counting the source rows. Reuse that job.
+      const concurrent = this.cache.getJobByFilters(serializedFilters);
+      if (concurrent !== undefined && concurrent.status !== 'failed') {
+        return this.toDownloadJob(concurrent);
+      }
+      throw error;
+    }
   }
 
   getDownloadJob(id: string): DownloadJob | undefined {
@@ -127,7 +151,6 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
     const rowCount = await this.upstream.countApiGeneralDownload(filters);
     const source = await this.upstream.createApiGeneralDownload(filters);
     const filePath = this.cache.jobFilePath(job.id);
-    await unlink(filePath).catch(() => undefined);
     const writer = new CsvWriter('deploy-emds-download', filePath, {
       batch_size: 10_000,
       logs: false,

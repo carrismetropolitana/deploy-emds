@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,25 @@ export interface DownloadJobRecord {
   readonly processed_rows: number;
   readonly error_message: string | null;
   readonly file_path: string | null;
+}
+
+interface StoredJobIdentity {
+  readonly id: string;
+  readonly cache_key: string;
+  readonly filters: string;
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeFiltersJson(filters: string): string {
+  const parsed = JSON.parse(filters) as Record<string, string>;
+  return JSON.stringify(
+    Object.fromEntries(
+      Object.entries(parsed).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+  );
 }
 
 export class SQLiteDownloadCache {
@@ -71,10 +91,53 @@ export class SQLiteDownloadCache {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS idx_download_jobs_cache_key
         ON download_jobs(cache_key);
+      CREATE INDEX IF NOT EXISTS idx_download_jobs_filters
+        ON download_jobs(filters);
       CREATE INDEX IF NOT EXISTS idx_download_jobs_status
         ON download_jobs(status, created_at);
     `);
 
+    this.normalizeStoredFilters();
+    this.randomizeLegacyCacheKeys();
+
+  }
+
+  private normalizeStoredFilters(): void {
+    const jobs = this.database.databaseInstance
+      .prepare('SELECT id, filters FROM download_jobs')
+      .all() as ReadonlyArray<{
+        readonly id: string;
+        readonly filters: string;
+      }>;
+    const update = this.database.databaseInstance.prepare(
+      'UPDATE download_jobs SET filters = ?, updated_at = ? WHERE id = ?',
+    );
+
+    for (const job of jobs) {
+      try {
+        const normalized = normalizeFiltersJson(job.filters);
+        if (normalized !== job.filters) {
+          update.run(normalized, Date.now(), job.id);
+        }
+      } catch {
+        // Keep malformed legacy rows readable so they can still be inspected.
+      }
+    }
+  }
+
+  private randomizeLegacyCacheKeys(): void {
+    const jobs = this.database.databaseInstance
+      .prepare('SELECT id, cache_key, filters FROM download_jobs')
+      .all() as readonly StoredJobIdentity[];
+    const update = this.database.databaseInstance.prepare(
+      'UPDATE download_jobs SET cache_key = ?, updated_at = ? WHERE id = ?',
+    );
+
+    for (const job of jobs) {
+      if (!UUID_PATTERN.test(job.cache_key)) {
+        update.run(randomUUID(), Date.now(), job.id);
+      }
+    }
   }
 
   close(): void {
@@ -83,17 +146,6 @@ export class SQLiteDownloadCache {
 
   ping(): void {
     this.database.databaseInstance.prepare('SELECT 1').get();
-  }
-
-  recoverInterruptedJobs(): void {
-    this.database.databaseInstance
-      .prepare(
-        `UPDATE download_jobs
-         SET status = 'queued', processed_rows = 0,
-             error_message = NULL, file_path = NULL, updated_at = ?
-         WHERE status = 'processing'`,
-      )
-      .run(Date.now());
   }
 
   jobFilePath(jobId: string): string {
@@ -137,10 +189,10 @@ export class SQLiteDownloadCache {
       .get(id) as DownloadJobRecord | undefined;
   }
 
-  getJobByCacheKey(cacheKey: string): DownloadJobRecord | undefined {
+  getJobByFilters(filters: string): DownloadJobRecord | undefined {
     return this.database.databaseInstance
-      .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE cache_key = ?')
-      .get(cacheKey) as DownloadJobRecord | undefined;
+      .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE filters = ? ORDER BY created_at LIMIT 1')
+      .get(filters) as DownloadJobRecord | undefined;
   }
 
   claimNextJob(): DownloadJobRecord | undefined {
