@@ -124,7 +124,7 @@ async function queueDownload(
     job_id: job.id,
     status: job.status,
     rows: job.rows,
-    status_url: `/disturbance/download/${job.id}`,
+    status_url: `${request.protocol}://${request.host}/disturbance/download/${job.id}`,
   });
 }
 
