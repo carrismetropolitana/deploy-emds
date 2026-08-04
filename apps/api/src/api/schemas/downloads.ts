@@ -56,12 +56,15 @@ export const downloadQuerySchema = {
 export const downloadMetadataResponseSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['filters', 'rows'],
+  required: ['filters', 'rows', 'message'],
   properties: {
     filters: downloadQuerySchema,
     rows: {
       type: 'integer',
       minimum: 0,
+    },
+    message: {
+      type: 'string',
     },
   },
 } as const;

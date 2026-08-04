@@ -35,12 +35,17 @@ async function getDownloadMetadata( request: FastifyRequest<{ Querystring: Downl
   FastifyReply | {
     readonly filters: DownloadFilters;
     readonly rows: number;
+    readonly message: string;
   }
 > {
   try {
     const rows = await repository.countApiGeneralDownload(request.query);
     reply.header('Cache-Control', 'no-store');
-    return { filters: request.query, rows };
+    return {
+      filters: request.query,
+      rows,
+      message: `This download contains ${rows.toLocaleString('en-US')} rows. Add /download to this URL to start generating the CSV file.`,
+    };
   } catch (error) {
     throw new ServiceUnavailableError(
       'The database is temporarily unavailable',
@@ -99,6 +104,7 @@ async function streamJobDownload(
   const stream = await repository.createDownloadJobStream(request.params.jobId);
   return reply
     .code(200)
+    .header('X-Row-Count', String(stream.rowCount))
     .header('Cache-Control', 'public, max-age=3600')
     .header(
       'Content-Disposition',

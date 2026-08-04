@@ -60,9 +60,10 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
       return this.toDownloadJob(existing);
     }
 
+    const rowCount = await this.upstream.countApiGeneralDownload(filters);
     const job = existing === undefined
-      ? this.cache.createJob(randomUUID(), key, JSON.stringify(filters))
-      : this.cache.retryJob(existing.id, JSON.stringify(filters));
+      ? this.cache.createJob(randomUUID(), key, JSON.stringify(filters), rowCount)
+      : this.cache.retryJob(existing.id, JSON.stringify(filters), rowCount);
     return this.toDownloadJob(job);
   }
 

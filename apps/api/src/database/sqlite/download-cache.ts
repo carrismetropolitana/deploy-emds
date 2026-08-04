@@ -82,27 +82,32 @@ export class SQLiteDownloadCache {
     return join(directory, `${jobId}.csv`);
   }
 
-  createJob(id: string, cacheKey: string, filters: string): DownloadJobRecord {
+  createJob(
+    id: string,
+    cacheKey: string,
+    filters: string,
+    rowCount: number,
+  ): DownloadJobRecord {
     const now = Date.now();
     this.database.databaseInstance
       .prepare(
         `INSERT INTO download_jobs
           (id, cache_key, filters, status, row_count, error_message, file_path, created_at, updated_at)
-         VALUES (?, ?, ?, 'queued', NULL, NULL, NULL, ?, ?)`,
+         VALUES (?, ?, ?, 'queued', ?, NULL, NULL, ?, ?)`,
       )
-      .run(id, cacheKey, filters, now, now);
+      .run(id, cacheKey, filters, rowCount, now, now);
     return this.getJob(id)!;
   }
 
-  retryJob(id: string, filters: string): DownloadJobRecord {
+  retryJob(id: string, filters: string, rowCount: number): DownloadJobRecord {
     this.database.databaseInstance
       .prepare(
         `UPDATE download_jobs
-         SET filters = ?, status = 'queued', row_count = NULL,
+         SET filters = ?, status = 'queued', row_count = ?,
              error_message = NULL, file_path = NULL, updated_at = ?
          WHERE id = ?`,
       )
-      .run(filters, Date.now(), id);
+      .run(filters, rowCount, Date.now(), id);
     return this.getJob(id)!;
   }
 
