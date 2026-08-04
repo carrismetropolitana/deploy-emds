@@ -17,7 +17,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN turbo prune @carrismetropolitana/deploy-emds-${MODULE} --docker
+RUN turbo prune @carrismetropolitana/deploy-emds-api --docker
 
 
 # # #
@@ -27,9 +27,9 @@ FROM base AS builder
 
 WORKDIR /app
 
-RUN apt-get update
-RUN apt-get install -y python3 build-essential
-RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y python3 build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=pruner /app/out/json/ .
 
@@ -37,7 +37,7 @@ RUN npm ci
 
 COPY --from=pruner /app/out/full/ .
 
-RUN turbo run build --filter=@carrismetropolitana/deploy-emds-${MODULE}
+RUN turbo run build --filter=@carrismetropolitana/deploy-emds-api
 
 
 # # #
@@ -51,16 +51,12 @@ ENV PORT=6192
 
 WORKDIR /app
 
-COPY --from=pruner /app/out/json/ .
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-RUN npm ci --omit=dev \
-  && npm cache clean --force
-
-COPY --from=builder \
-  /app/apps/${MODULE}/dist \
-  ./apps/${MODULE}/dist
-
-WORKDIR /app/apps/${MODULE}
+WORKDIR /app/apps/api
 
 EXPOSE 6192
 
