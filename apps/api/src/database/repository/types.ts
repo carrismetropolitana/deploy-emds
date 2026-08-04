@@ -6,6 +6,8 @@ export interface DownloadJob {
   readonly id: string;
   readonly status: 'queued' | 'processing' | 'completed' | 'failed';
   readonly rows: number | null;
+  readonly processed_rows: number;
+  readonly remaining_rows: number;
   readonly error: string | null;
 }
 

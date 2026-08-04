@@ -1,3 +1,4 @@
+import { ZipArchive } from 'archiver';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import type { CsvDownloadStream, PublicDataRepository } from '../../database/repository/types.js';
@@ -29,6 +30,35 @@ function downloadFilename(filters: DownloadFilters): string {
       : `_route-${filters.route_id}`;
 
   return `api_general_${downloadPeriod(filters)}_${filters.agency_id}${referenceSuffix}${routeSuffix}.csv`;
+}
+
+function downloadZipFilename(filters: DownloadFilters): string {
+  return downloadFilename(filters).replace(/\.csv$/, '.zip');
+}
+
+function createZipStream(
+  request: FastifyRequest,
+  csvStream: CsvDownloadStream,
+  csvFilename: string,
+): ZipArchive {
+  const archive = new ZipArchive({ zlib: { level: 9 } });
+  archive.on('warning', (error) => {
+    request.log.warn({ err: error }, 'CSV ZIP archive warning');
+  });
+  archive.on('error', (error) => {
+    request.log.error({ err: error }, 'CSV ZIP archive failed');
+  });
+  archive.append(csvStream, { name: csvFilename });
+  return archive;
+}
+
+function finalizeZipStream(
+  request: FastifyRequest,
+  archive: ZipArchive,
+): void {
+  void archive.finalize().catch((error: unknown) => {
+    request.log.error({ err: error }, 'CSV ZIP archive finalization failed');
+  });
 }
 
 async function getDownloadMetadata( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<
@@ -80,13 +110,20 @@ async function streamDownload( request: FastifyRequest<{ Querystring: DownloadFi
     .header('Cache-Control', 'public, max-age=3600')
     .header(
       'Content-Disposition',
-      `attachment; filename="${downloadFilename(request.query)}"`,
+      `attachment; filename="${downloadZipFilename(request.query)}"`,
     )
     .header('X-Accel-Buffering', 'no')
     .header('X-Content-Type-Options', 'nosniff')
-    .type('text/csv; charset=utf-8');
+    .type('application/zip');
 
-  return reply.send(stream);
+  const archive = createZipStream(
+    request,
+    stream,
+    downloadFilename(request.query),
+  );
+  const response = reply.send(archive);
+  finalizeZipStream(request, archive);
+  return response;
 }
 
 async function streamJobDownload(
@@ -102,16 +139,24 @@ async function streamJobDownload(
   }
 
   const stream = await repository.createDownloadJobStream(request.params.jobId);
-  return reply
+  const archive = createZipStream(
+    request,
+    stream,
+    downloadFilename(filters),
+  );
+  const response = reply
     .code(200)
     .header('X-Row-Count', String(stream.rowCount))
     .header('Cache-Control', 'public, max-age=3600')
     .header(
       'Content-Disposition',
-      `attachment; filename="${downloadFilename(filters)}"`,
+      `attachment; filename="${downloadZipFilename(filters)}"`,
     )
-    .type('text/csv; charset=utf-8')
-    .send(stream);
+    .header('X-Content-Type-Options', 'nosniff')
+    .type('application/zip')
+    .send(archive);
+  finalizeZipStream(request, archive);
+  return response;
 }
 
 async function queueDownload(
@@ -124,6 +169,8 @@ async function queueDownload(
     job_id: job.id,
     status: job.status,
     rows: job.rows,
+    processed_rows: job.processed_rows,
+    remaining_rows: job.remaining_rows,
     status_url: `${request.protocol}://${request.host}/disturbance/download/${job.id}`,
   });
 }
@@ -132,8 +179,8 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
   const { repository } = options;
   const routeConfig = {
     rateLimit: {
-      max: 6,
-      timeWindow: 60_000,
+      max: 10,
+      timeWindow: 30_000,
     },
   };
 
@@ -166,11 +213,11 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
       },
       schema: {
         tags: ['Downloads'],
-        summary: 'Show metadata or download the filtered CSV',
+        summary: 'Show metadata or download the filtered CSV as a ZIP archive',
         description:
-          'Returns JSON metadata normally. Append /download after the query to download the CSV.',
+          'Returns JSON metadata normally. Append /download after the query to download the CSV as a ZIP archive.',
         querystring: downloadQuerySchema,
-        produces: ['application/json', 'text/csv'],
+        produces: ['application/json', 'application/zip'],
         response: {
           200: {
             oneOf: [
@@ -178,8 +225,8 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
               downloadFilterHelpResponseSchema,
               {
                 type: 'string',
-                contentMediaType: 'text/csv',
-                description: 'CSV download stream.',
+                contentMediaType: 'application/zip',
+                description: 'ZIP archive containing the CSV download.',
               },
             ],
           },
@@ -208,14 +255,14 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
       config: routeConfig,
       schema: {
         tags: ['Downloads'],
-        summary: 'Download the filtered CSV',
+        summary: 'Download the filtered CSV as a ZIP archive',
         querystring: downloadQuerySchema,
-        produces: ['text/csv'],
+        produces: ['application/zip'],
         response: {
           200: {
             type: 'string',
-            contentMediaType: 'text/csv',
-            description: 'CSV download stream.',
+            contentMediaType: 'application/zip',
+            description: 'ZIP archive containing the CSV download.',
           },
           400: errorSchema,
           429: errorSchema,
@@ -252,6 +299,8 @@ export function registerDownloadRoutes( app: FastifyInstance, options: DownloadR
           job_id: job.id,
           status: job.status,
           rows: job.rows,
+          processed_rows: job.processed_rows,
+          remaining_rows: job.remaining_rows,
           error: job.error,
         });
       }

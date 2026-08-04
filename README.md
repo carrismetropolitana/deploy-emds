@@ -11,15 +11,15 @@ No account or credentials are required.
 ## How the API works
 
 The generated CSV files can be very large, so the API creates them in the
-background:
+background and returns them inside a ZIP archive:
 
 1. Open a URL with the required filters.
 2. The API reports how many rows match.
 3. Add `/download` to start a generation job.
 4. Open the returned job URL while the file is being generated.
-5. When the job is complete, that same URL downloads the CSV.
+5. When the job is complete, that same URL downloads a ZIP containing the CSV.
 
-The first `/download` response is a job status, not the CSV itself.
+The first `/download` response is a job status, not the ZIP itself.
 
 ## Required filters
 
@@ -72,6 +72,8 @@ The API returns a job similar to:
   "job_id": "8f8d3c3a-4b85-4cf6-9b0d-12c3d4567890",
   "status": "queued",
   "rows": 2207,
+  "processed_rows": 0,
+  "remaining_rows": 2207,
   "status_url": "/disturbance/download/8f8d3c3a-4b85-4cf6-9b0d-12c3d4567890"
 }
 ```
@@ -99,9 +101,17 @@ While the file is being created, the response is similar to:
   "job_id": "8f8d3c3a-4b85-4cf6-9b0d-12c3d4567890",
   "status": "processing",
   "rows": 2207,
+  "processed_rows": 1000,
+  "remaining_rows": 1207,
   "error": null
 }
 ```
+
+`rows` is the expected total, `processed_rows` is the number already written,
+and `remaining_rows` is the number still to generate. Poll `status_url` again
+to refresh these values. When the status is `completed`, `remaining_rows` is
+`0` and the same URL downloads the ZIP containing the CSV. The API marks the job as `completed`
+only after the complete CSV has been flushed successfully.
 
 | Status | Meaning |
 | --- | --- |
@@ -110,24 +120,29 @@ While the file is being created, the response is similar to:
 | `completed` | The CSV is ready |
 | `failed` | Generation failed; inspect `error` |
 
+If the API restarts while a job is `processing`, the job is automatically
+returned to `queued` and the CSV is generated again from the beginning.
+
 Open the status URL again while the status is `queued` or `processing`.
 
-## 4. Download the CSV
+## 4. Download the ZIP
 
 When the job status is `completed`, open the same status URL again. It will
-return the CSV file instead of JSON.
+return a ZIP archive instead of JSON. The ZIP contains one CSV file.
 
-The CSV response includes:
+The ZIP response includes:
 
-- `Content-Type: text/csv`
-- `Content-Disposition` with the filename
+- `Content-Type: application/zip`
+- `Content-Disposition` with the ZIP filename
 - `X-Row-Count` with the number of rows
 
 Generated filenames follow this pattern:
 
 ```text
-api_general_<yearmonth>_<agency_id>_<reference>[_route-<route_id>].csv
+api_general_<yearmonth>_<agency_id>_<reference>[_route-<route_id>].zip
 ```
+
+The CSV inside the ZIP keeps the matching `.csv` filename.
 
 ## Complete filter examples
 

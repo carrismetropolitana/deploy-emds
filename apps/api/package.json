@@ -15,18 +15,20 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@fast-csv/parse": "^5.0.7",
     "@fastify/cors": "^11.3.0",
     "@fastify/rate-limit": "^11.1.0",
     "@fastify/swagger": "^9.8.1",
-    "@fast-csv/parse": "^5.0.7",
     "@tmlmobilidade/sqlite": "20260803.15.9",
     "@tmlmobilidade/ssh": "20260730.1037.5",
     "@tmlmobilidade/writers": "20260803.15.9",
+    "archiver": "^8.0.0",
     "fastify": "^5.10.0",
     "pg": "^8.22.0",
     "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {
+    "@types/archiver": "^8.0.0",
     "@types/node": "^26.1.1",
     "@types/pg": "^8.20.0",
     "@types/pg-copy-streams": "^1.2.5",

@@ -12,6 +12,8 @@ import type { DownloadJobRecord } from '../sqlite/download-cache.js';
 
 type CsvRow = Record<string, string>;
 
+const PROGRESS_UPDATE_BATCH_SIZE = 1_000;
+
 function cacheKey(filters: DownloadFilters): string {
   return JSON.stringify(
     Object.entries(filters).sort(([left], [right]) =>
@@ -40,6 +42,7 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
 
   startQueue(): void {
     if (this.queueTimer !== undefined) return;
+    this.cache.recoverInterruptedJobs();
     this.queueTimer = setInterval(() => {
       void this.processNextJob();
     }, 250);
@@ -107,6 +110,8 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
     this.queueRunning = true;
     try {
       const generated = await this.generateDownload(job);
+      // The generator only returns after writer.flush() succeeds. Mark the
+      // job completed only after the complete CSV is safely written.
       this.cache.completeJob(job.id, generated.rowCount, generated.filePath);
     } catch (error) {
       this.cache.failJob(job.id, error);
@@ -122,6 +127,7 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
     const rowCount = await this.upstream.countApiGeneralDownload(filters);
     const source = await this.upstream.createApiGeneralDownload(filters);
     const filePath = this.cache.jobFilePath(job.id);
+    await unlink(filePath).catch(() => undefined);
     const writer = new CsvWriter('deploy-emds-download', filePath, {
       batch_size: 10_000,
       logs: false,
@@ -133,7 +139,11 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
       for await (const row of parser as AsyncIterable<CsvRow>) {
         await writer.write(row);
         sequence += 1;
+        if (sequence % PROGRESS_UPDATE_BATCH_SIZE === 0) {
+          this.cache.updateProgress(job.id, sequence);
+        }
       }
+      this.cache.updateProgress(job.id, sequence);
       if (sequence === 0) {
         await writer.write({});
       }
@@ -150,6 +160,8 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
       id: job.id,
       status: job.status,
       rows: job.row_count,
+      processed_rows: job.processed_rows,
+      remaining_rows: Math.max((job.row_count ?? 0) - job.processed_rows, 0),
       error: job.error_message,
     };
   }

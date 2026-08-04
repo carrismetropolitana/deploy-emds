@@ -16,6 +16,7 @@ export interface DownloadJobRecord {
   readonly filters: string;
   readonly status: DownloadJobStatus;
   readonly row_count: number | null;
+  readonly processed_rows: number;
   readonly error_message: string | null;
   readonly file_path: string | null;
 }
@@ -48,6 +49,13 @@ export class SQLiteDownloadCache {
     } catch {
       // The column already exists on a current database.
     }
+    try {
+      this.database.databaseInstance.exec(
+        'ALTER TABLE download_jobs ADD COLUMN processed_rows INTEGER NOT NULL DEFAULT 0',
+      );
+    } catch {
+      // The column already exists on a current database.
+    }
     this.database.databaseInstance.exec(`
       CREATE TABLE IF NOT EXISTS download_jobs (
         id TEXT PRIMARY KEY,
@@ -55,6 +63,7 @@ export class SQLiteDownloadCache {
         filters TEXT NOT NULL,
         status TEXT NOT NULL,
         row_count INTEGER,
+        processed_rows INTEGER NOT NULL DEFAULT 0,
         error_message TEXT,
         file_path TEXT,
         created_at INTEGER NOT NULL,
@@ -76,6 +85,17 @@ export class SQLiteDownloadCache {
     this.database.databaseInstance.prepare('SELECT 1').get();
   }
 
+  recoverInterruptedJobs(): void {
+    this.database.databaseInstance
+      .prepare(
+        `UPDATE download_jobs
+         SET status = 'queued', processed_rows = 0,
+             error_message = NULL, file_path = NULL, updated_at = ?
+         WHERE status = 'processing'`,
+      )
+      .run(Date.now());
+  }
+
   jobFilePath(jobId: string): string {
     const directory = join(dirname(this.databasePath), 'downloads');
     mkdirSync(directory, { recursive: true });
@@ -92,8 +112,8 @@ export class SQLiteDownloadCache {
     this.database.databaseInstance
       .prepare(
         `INSERT INTO download_jobs
-          (id, cache_key, filters, status, row_count, error_message, file_path, created_at, updated_at)
-         VALUES (?, ?, ?, 'queued', ?, NULL, NULL, ?, ?)`,
+          (id, cache_key, filters, status, row_count, processed_rows, error_message, file_path, created_at, updated_at)
+         VALUES (?, ?, ?, 'queued', ?, 0, NULL, NULL, ?, ?)`,
       )
       .run(id, cacheKey, filters, rowCount, now, now);
     return this.getJob(id)!;
@@ -104,7 +124,7 @@ export class SQLiteDownloadCache {
       .prepare(
         `UPDATE download_jobs
          SET filters = ?, status = 'queued', row_count = ?,
-             error_message = NULL, file_path = NULL, updated_at = ?
+             processed_rows = 0, error_message = NULL, file_path = NULL, updated_at = ?
          WHERE id = ?`,
       )
       .run(filters, rowCount, Date.now(), id);
@@ -113,13 +133,13 @@ export class SQLiteDownloadCache {
 
   getJob(id: string): DownloadJobRecord | undefined {
     return this.database.databaseInstance
-      .prepare('SELECT id, cache_key, filters, status, row_count, error_message, file_path FROM download_jobs WHERE id = ?')
+      .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE id = ?')
       .get(id) as DownloadJobRecord | undefined;
   }
 
   getJobByCacheKey(cacheKey: string): DownloadJobRecord | undefined {
     return this.database.databaseInstance
-      .prepare('SELECT id, cache_key, filters, status, row_count, error_message, file_path FROM download_jobs WHERE cache_key = ?')
+      .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE cache_key = ?')
       .get(cacheKey) as DownloadJobRecord | undefined;
   }
 
@@ -127,7 +147,7 @@ export class SQLiteDownloadCache {
     const transaction = this.database.databaseInstance.transaction(() => {
       const job = this.database.databaseInstance
         .prepare(
-          `SELECT id, cache_key, filters, status, row_count, error_message, file_path
+          `SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path
            FROM download_jobs
            WHERE status = 'queued'
            ORDER BY created_at
@@ -145,10 +165,18 @@ export class SQLiteDownloadCache {
     return transaction();
   }
 
+  updateProgress(id: string, processedRows: number): void {
+    this.database.databaseInstance
+      .prepare(
+        'UPDATE download_jobs SET processed_rows = ?, updated_at = ? WHERE id = ?',
+      )
+      .run(processedRows, Date.now(), id);
+  }
+
   completeJob(id: string, rowCount: number, filePath: string): void {
     this.database.databaseInstance
-      .prepare("UPDATE download_jobs SET status = 'completed', row_count = ?, file_path = ?, updated_at = ? WHERE id = ?")
-      .run(rowCount, filePath, Date.now(), id);
+      .prepare("UPDATE download_jobs SET status = 'completed', row_count = ?, processed_rows = ?, file_path = ?, updated_at = ? WHERE id = ?")
+      .run(rowCount, rowCount, filePath, Date.now(), id);
   }
 
   failJob(id: string, error: unknown): void {
