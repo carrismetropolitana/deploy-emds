@@ -1,7 +1,7 @@
 # # #
 # DEFINE THE BASE IMAGE
 
-FROM node:24-alpine AS base
+FROM node:lts-slim AS base
 
 ENV MODULE=api
 
@@ -27,6 +27,10 @@ FROM base AS builder
 
 WORKDIR /app
 
+RUN apt-get update
+RUN apt-get install -y python3 build-essential
+RUN rm -rf /var/lib/apt/lists/*
+
 COPY --from=pruner /app/out/json/ .
 
 RUN npm ci
@@ -39,7 +43,7 @@ RUN turbo run build --filter=@carrismetropolitana/deploy-emds-${MODULE}
 # # #
 # RUNNER STAGE
 
-FROM base AS runner
+FROM gcr.io/distroless/nodejs24-debian13 AS runner
 
 ENV HOST=0.0.0.0
 ENV NODE_ENV=production
