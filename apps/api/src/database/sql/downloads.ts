@@ -10,21 +10,13 @@ function buildFilterConditions( alias: string, filters: DownloadFilters, referen
     `${alias}."agency_id" = ${sqlLiteral(filters.agency_id)}`,
   ];
 
-  if (filters.yearmonth !== undefined) {
-    conditions.unshift(
-      `${alias}."yearmonth" = ${sqlLiteral(filters.yearmonth)}`,
-    );
-  } else {
-    conditions.unshift(
-      `${alias}."yearmonth" BETWEEN ${sqlLiteral(filters.yearmonth_from)} AND ${sqlLiteral(filters.yearmonth_to)}`,
-    );
-  }
+  conditions.unshift(
+    `${alias}."yearmonth" = ${sqlLiteral(filters.yearmonth)}`,
+  );
 
-  if (filters.reference !== undefined) {
-    conditions.push(
-      `${alias}.${quoteIdentifier(referenceColumn)} = ${sqlLiteral(filters.reference)}`,
-    );
-  }
+  conditions.push(
+    `${alias}.${quoteIdentifier(referenceColumn)} = ${sqlLiteral(filters.reference)}`,
+  );
 
   if (filters.disturbance_class !== undefined) {
     conditions.push(

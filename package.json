@@ -7,7 +7,7 @@
     "check": "npm run typecheck && npm run build",
     "dev": "dotenv-run -f ./environments/development/secrets/.env -- turbo run dev --filter=@carrismetropolitana/deploy-emds-api",
     "repo:rinse": "npx --yes @tmlmobilidade/repo-rinse",
-    "start": "npm run build && npm run dev",
+    "start": "turbo run build && dotenv-run -f ./environments/development/secrets/.env -- turbo run dev --filter=@carrismetropolitana/deploy-emds-api",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {

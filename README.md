@@ -2,6 +2,11 @@
 
 Public API for downloading DeployEMDS road-link data. No credentials are required.
 
+Large CSV downloads are queued in the persistent SQLite database at
+`/data/jobs_queue.sqlite` on the machine running the API. SQLite stores the
+request, job status, row count, and generated file path; CSV content is stored
+as a file under `/data/downloads/`.
+
 Data is updated monthly and covers the three most recently completed months.
 
 ## Available datasets
@@ -39,15 +44,11 @@ Main fields:
 
 ## How to query
 
-Because of the data volume, every download request must include either one
-month (`yearmonth`) or an inclusive month range (`yearmonth_from` and
-`yearmonth_to`):
+Because of the data volume, every download request must include one month:
 
 | Filter | Required | Values |
 | --- | --- | --- |
-| `yearmonth` | Conditional | One month in `YYYYMM` format (e.g. `202605`) |
-| `yearmonth_from` | Conditional | First month of the inclusive range (e.g. `202605`) |
-| `yearmonth_to` | Conditional | Last month of the inclusive range (e.g. `202606`) |
+| `yearmonth` | Yes | Month in `YYYYMM` format (e.g. `202605`) |
 | `agency_id` | Yes | `41`, `42`, `43`, or `44` |
 | `reference` | Yes | `planned` or `freeflow` |
 | `route_id` | No | e.g. `1001_0` |
@@ -56,12 +57,6 @@ Single-month example:
 
 ```http
 GET /disturbance?yearmonth=202605&agency_id=41&reference=planned
-```
-
-Inclusive range example:
-
-```http
-GET /disturbance?yearmonth_from=202605&yearmonth_to=202606&agency_id=41&reference=planned
 ```
 
 The normal URL returns the applied filters and matching row count. Append

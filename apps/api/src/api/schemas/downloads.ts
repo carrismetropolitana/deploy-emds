@@ -3,32 +3,14 @@ import { AGENCY_IDS, REFERENCE_TYPES } from '../../domain/consts.js';
 export const downloadQuerySchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['agency_id'],
   oneOf: [
     {
       type: 'object',
-      required: ['yearmonth'],
-      not: {
-        type: 'object',
-        anyOf: [
-          {
-            type: 'object',
-            required: ['yearmonth_from'],
-          },
-          {
-            type: 'object',
-            required: ['yearmonth_to'],
-          },
-        ],
-      },
+      maxProperties: 0,
     },
     {
       type: 'object',
-      required: ['yearmonth_from', 'yearmonth_to'],
-      not: {
-        type: 'object',
-        required: ['yearmonth'],
-      },
+      required: ['yearmonth', 'agency_id', 'reference'],
     },
   ],
   properties: {
@@ -37,18 +19,6 @@ export const downloadQuerySchema = {
       pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
       description: 'Completed month in YYYYMM format.',
       examples: ['202605'],
-    },
-    yearmonth_from: {
-      type: 'string',
-      pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
-      description: 'First completed month in an inclusive YYYYMM range.',
-      examples: ['202605'],
-    },
-    yearmonth_to: {
-      type: 'string',
-      pattern: '^[0-9]{4}(0[1-9]|1[0-2])$',
-      description: 'Last completed month in an inclusive YYYYMM range.',
-      examples: ['202606'],
     },
     agency_id: {
       type: 'string',
@@ -93,5 +63,26 @@ export const downloadMetadataResponseSchema = {
       type: 'integer',
       minimum: 0,
     },
+  },
+} as const;
+
+export const downloadFilterHelpResponseSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'message',
+    'endpoint',
+    'required_filters',
+    'optional_filters',
+    'example',
+    'documentation',
+  ],
+  properties: {
+    message: { type: 'string' },
+    endpoint: { type: 'string' },
+    required_filters: { type: 'string' },
+    optional_filters: { type: 'string' },
+    example: { type: 'string' },
+    documentation: { type: 'string' },
   },
 } as const;

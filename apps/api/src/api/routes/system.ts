@@ -3,8 +3,19 @@ import type { FastifyInstance } from 'fastify';
 import type { PublicDataRepository } from '../../database/repository/types.js';
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema, statusSchema } from '../schemas/common.js';
+import { PROJECT_DOCUMENTATION_URL } from '../welcome.js';
 
 export function registerSystemRoutes( app: FastifyInstance, repository: PublicDataRepository ): void {
+  app.get(
+    '/',
+    {
+      schema: {
+        hide: true,
+      },
+    },
+    async (_request, reply) => reply.redirect(PROJECT_DOCUMENTATION_URL),
+  );
+
   app.get(
     '/health',
     {

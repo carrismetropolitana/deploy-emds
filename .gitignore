@@ -6,3 +6,4 @@ coverage/
 *.log
 *.key
 .DS_Store
+/data/

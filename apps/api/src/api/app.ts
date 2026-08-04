@@ -120,6 +120,10 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     }
 
     request.log.error({ err: error }, 'Unhandled request error');
+    if (reply.sent) {
+      return reply;
+    }
+
     return reply.code(500).send({
       error: {
         code: 'INTERNAL_SERVER_ERROR',

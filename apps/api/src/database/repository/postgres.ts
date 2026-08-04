@@ -6,7 +6,7 @@ import type { AgencyId, AvailableRow, DownloadFilters } from '../../domain/const
 import { buildAvailableRoutesSql, buildAvailableSql, buildAvailableTripsSql } from '../sql/available.js';
 import { buildApiGeneralCountSql, buildApiGeneralCopySql } from '../sql/downloads.js';
 import type { DatabaseIdentifiers } from '../sql/types.js';
-import type { CsvDownloadStream, PublicDataRepository } from './types.js';
+import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from './types.js';
 
 interface DatabaseAvailableRow extends QueryResultRow, AvailableRow {}
 
@@ -26,6 +26,26 @@ export class PostgresPublicDataRepository implements PublicDataRepository {
 
   async close(): Promise<void> {
     await this.pool.end();
+  }
+
+  startQueue(): void {}
+
+  stopQueue(): void {}
+
+  async enqueueApiGeneralDownload(): Promise<DownloadJob> {
+    throw new Error('Download queue is only available on the SQLite repository');
+  }
+
+  getDownloadJob(): DownloadJob | undefined {
+    return undefined;
+  }
+
+  getDownloadJobFilters(): DownloadFilters | undefined {
+    return undefined;
+  }
+
+  async createDownloadJobStream(): Promise<CsvDownloadStream> {
+    throw new Error('Download queue is only available on the SQLite repository');
   }
 
   async countApiGeneralDownload(

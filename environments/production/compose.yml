@@ -45,6 +45,9 @@ services:
       HOST: 0.0.0.0
       NODE_ENV: production
       PORT: 6192
+      DOWNLOAD_CACHE_PATH: /data/jobs_queue.sqlite
+    volumes:
+      - downloadcache:/data
 
   certbot:
     image: certbot/certbot
@@ -66,3 +69,4 @@ services:
 
 volumes:
   certbotdata:
+  downloadcache:

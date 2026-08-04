@@ -49,7 +49,7 @@ WORKDIR /app
 
 COPY --from=pruner /app/out/json/ .
 
-RUN npm ci --omit=dev --ignore-scripts \
+RUN npm ci --omit=dev \
   && npm cache clean --force
 
 COPY --from=builder \
