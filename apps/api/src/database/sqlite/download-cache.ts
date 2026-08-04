@@ -22,6 +22,11 @@ export interface DownloadJobRecord {
   readonly file_path: string | null;
 }
 
+export interface ExpiredDownloadJobRecord {
+  readonly id: string;
+  readonly file_path: string | null;
+}
+
 interface StoredJobIdentity {
   readonly id: string;
   readonly cache_key: string;
@@ -108,16 +113,16 @@ export class SQLiteDownloadCache {
       .all() as ReadonlyArray<{
         readonly id: string;
         readonly filters: string;
-      }>;
+    }>;
     const update = this.database.databaseInstance.prepare(
-      'UPDATE download_jobs SET filters = ?, updated_at = ? WHERE id = ?',
+      'UPDATE download_jobs SET filters = ? WHERE id = ?',
     );
 
     for (const job of jobs) {
       try {
         const normalized = normalizeFiltersJson(job.filters);
         if (normalized !== job.filters) {
-          update.run(normalized, Date.now(), job.id);
+          update.run(normalized, job.id);
         }
       } catch {
         // Keep malformed legacy rows readable so they can still be inspected.
@@ -130,12 +135,12 @@ export class SQLiteDownloadCache {
       .prepare('SELECT id, cache_key, filters FROM download_jobs')
       .all() as readonly StoredJobIdentity[];
     const update = this.database.databaseInstance.prepare(
-      'UPDATE download_jobs SET cache_key = ?, updated_at = ? WHERE id = ?',
+      'UPDATE download_jobs SET cache_key = ? WHERE id = ?',
     );
 
     for (const job of jobs) {
       if (!UUID_PATTERN.test(job.cache_key)) {
-        update.run(randomUUID(), Date.now(), job.id);
+        update.run(randomUUID(), job.id);
       }
     }
   }
@@ -193,6 +198,25 @@ export class SQLiteDownloadCache {
     return this.database.databaseInstance
       .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE filters = ? ORDER BY created_at LIMIT 1')
       .get(filters) as DownloadJobRecord | undefined;
+  }
+
+  listExpiredCompletedJobs(
+    updatedBefore: number,
+  ): readonly ExpiredDownloadJobRecord[] {
+    return this.database.databaseInstance
+      .prepare(
+        `SELECT id, file_path
+         FROM download_jobs
+         WHERE status = 'completed' AND updated_at <= ?
+         ORDER BY updated_at`,
+      )
+      .all(updatedBefore) as readonly ExpiredDownloadJobRecord[];
+  }
+
+  deleteCompletedJob(id: string): void {
+    this.database.databaseInstance
+      .prepare("DELETE FROM download_jobs WHERE id = ? AND status = 'completed'")
+      .run(id);
   }
 
   claimNextJob(): DownloadJobRecord | undefined {

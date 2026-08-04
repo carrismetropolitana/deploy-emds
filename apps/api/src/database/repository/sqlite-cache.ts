@@ -8,11 +8,21 @@ import { CsvWriter } from '@tmlmobilidade/writers';
 import type { AgencyId, AvailableRow, DownloadFilters } from '../../domain/consts.js';
 import { SQLiteDownloadCache } from '../sqlite/download-cache.js';
 import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from './types.js';
-import type { DownloadJobRecord } from '../sqlite/download-cache.js';
+import type { DownloadJobRecord, ExpiredDownloadJobRecord } from '../sqlite/download-cache.js';
 
 type CsvRow = Record<string, string>;
 
 const PROGRESS_UPDATE_BATCH_SIZE = 1_000;
+const DOWNLOAD_CLEANUP_INTERVAL_MS = 60 * 60 * 1_000; // 1 hour
+const DOWNLOAD_RETENTION_MS = 7 * 24 * 60 * 60 * 1_000; // 7 days
+
+function isMissingFileError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
 
 function serializeFilters(filters: DownloadFilters): string {
   return JSON.stringify(
@@ -25,6 +35,8 @@ function serializeFilters(filters: DownloadFilters): string {
 }
 
 export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
+  private cleanupPromise: Promise<number> | undefined;
+  private cleanupTimer: NodeJS.Timeout | undefined;
   private queueTimer: NodeJS.Timeout | undefined;
   private queueRunning = false;
 
@@ -36,6 +48,7 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
   async close(): Promise<void> {
     try {
       this.stopQueue();
+      await this.cleanupPromise;
       await this.upstream.close();
     } finally {
       this.cache.close();
@@ -44,17 +57,67 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
 
   startQueue(): void {
     if (this.queueTimer !== undefined) return;
+    this.cleanupTimer = setInterval(() => {
+      this.runExpiredDownloadCleanup();
+    }, DOWNLOAD_CLEANUP_INTERVAL_MS);
     this.queueTimer = setInterval(() => {
       void this.processNextJob();
     }, 250);
+    this.runExpiredDownloadCleanup();
     void this.processNextJob();
   }
 
   stopQueue(): void {
+    if (this.cleanupTimer !== undefined) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
     if (this.queueTimer !== undefined) {
       clearInterval(this.queueTimer);
       this.queueTimer = undefined;
     }
+  }
+
+  async cleanupExpiredDownloads(now = Date.now()): Promise<number> {
+    if (this.cleanupPromise !== undefined) {
+      return this.cleanupPromise;
+    }
+
+    const operation = this.removeExpiredDownloads(
+      this.cache.listExpiredCompletedJobs(now - DOWNLOAD_RETENTION_MS),
+    );
+    this.cleanupPromise = operation;
+    try {
+      return await operation;
+    } finally {
+      this.cleanupPromise = undefined;
+    }
+  }
+
+  private runExpiredDownloadCleanup(): void {
+    void this.cleanupExpiredDownloads().catch((error: unknown) => {
+      console.error('[SQLITE] Download cleanup failed:', error);
+    });
+  }
+
+  private async removeExpiredDownloads(
+    jobs: readonly ExpiredDownloadJobRecord[],
+  ): Promise<number> {
+    let removed = 0;
+    for (const job of jobs) {
+      if (job.file_path !== null) {
+        try {
+          await unlink(job.file_path);
+        } catch (error) {
+          if (!isMissingFileError(error)) {
+            continue;
+          }
+        }
+      }
+      this.cache.deleteCompletedJob(job.id);
+      removed += 1;
+    }
+    return removed;
   }
 
   async enqueueApiGeneralDownload(filters: DownloadFilters): Promise<DownloadJob> {

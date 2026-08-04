@@ -209,3 +209,7 @@ are available:
 The API stores job information in `jobs_queue.sqlite`. Generated CSV content
 is stored separately as files, not inside SQLite. This keeps the queue small
 even when generated datasets are several gigabytes in size.
+
+Completed jobs and their generated files in `data/downloads` are retained for
+seven days. Expired files and their matching SQLite job rows are removed on
+startup and then checked every hour.
