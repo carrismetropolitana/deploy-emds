@@ -72,20 +72,10 @@ export const downloadMetadataResponseSchema = {
 export const downloadFilterHelpResponseSchema = {
   type: 'object',
   additionalProperties: false,
-  required: [
-    'message',
-    'endpoint',
-    'required_filters',
-    'optional_filters',
-    'example',
-    'documentation',
-  ],
+  required: ['message', 'available', 'documentation'],
   properties: {
     message: { type: 'string' },
-    endpoint: { type: 'string' },
-    required_filters: { type: 'string' },
-    optional_filters: { type: 'string' },
-    example: { type: 'string' },
+    available: { type: 'string' },
     documentation: { type: 'string' },
   },
 } as const;
