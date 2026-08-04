@@ -1,7 +1,7 @@
 import type { FastifyReply } from 'fastify';
 
 export const PROJECT_DOCUMENTATION_URL =
-  'https://github.com/carrismetropolitana/disturbance';
+  'https://github.com/carrismetropolitana/deploy-emds';
 
 export const FILTER_HELP_RESPONSE = {
   message:
