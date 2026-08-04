@@ -4,7 +4,7 @@ The DeployEMDS API provides Carris Metropolitana road-link disturbance data.
 
 Official API:
 
-[https://emds.carrismetropolitana.pt/disturbance](https://emds.carrismetropolitana.pt/disturbance)
+``` (https://emds.carrismetropolitana.pt/disturbance) ```
 
 No account or credentials are required.
 
@@ -41,7 +41,7 @@ Optional filters can be combined in any combination:
 
 Open the filtered URL without `/download`:
 
-[Check rows for agency 41](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned) ```
 
 The response is similar to:
 
@@ -63,7 +63,7 @@ This request only counts matching rows. It does not generate a file.
 
 Use `/disturbance/download` before the query parameters:
 
-[Start a route download](https://emds.carrismetropolitana.pt/disturbance/download?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0)
+``` (https://emds.carrismetropolitana.pt/disturbance/download?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0) ```
 
 The API returns a job similar to:
 
@@ -81,7 +81,7 @@ URL for this specific job.
 
 This older URL format is also supported:
 
-[Legacy download URL](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download) ```
 
 The separate `/disturbance/download?...` URL is recommended because it is
 clearer.
@@ -90,8 +90,8 @@ clearer.
 
 Open the `status_url` returned by the API:
 
-[Example job status](https://emds.carrismetropolitana.pt/disturbance/download/[job__id])
-[Example job status](https://emds.carrismetropolitana.pt/disturbance/download/8f8d3c3a-4b85-4cf6-9b0d-12c3d4567890)
+``` (https://emds.carrismetropolitana.pt/disturbance/download/[job__id]) ```
+``` (https://emds.carrismetropolitana.pt/disturbance/download/8f8d3c3a-4b85-4cf6-9b0d-12c3d4567890) ```
 
 While the file is being created, the response is similar to:
 
@@ -134,27 +134,27 @@ api_general_<yearmonth>_<agency_id>_<reference>[_route-<route_id>].csv
 
 All records for an agency and month:
 
-[Agency and month](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned) ```
 
 Using the `freeflow` reference:
 
-[Freeflow reference](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=freeflow)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=freeflow) ```
 
 Filtering by disturbance class:
 
-[Disturbance class](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high) ```
 
 Filtering by route:
 
-[Route](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0) ```
 
 Filtering by trip:
 
-[Trip](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&trip_id=1002_0_20260615_0800)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&trip_id=1002_0_20260615_0800) ```
 
 Using every optional filter:
 
-[All optional filters](https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high&route_id=1002_0&trip_id=1002_0_20260615_0800)
+``` (https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high&route_id=1002_0&trip_id=1002_0_20260615_0800) ```
 
 To generate a file from any of these URLs, use the same filters with
 `/disturbance/download?...`.
@@ -178,16 +178,11 @@ The CSV contains these columns, in this order:
 Use the discovery pages before creating a job if you are unsure which values
 are available:
 
-- [Available values](https://emds.carrismetropolitana.pt/disturbance/available)
-- [All routes](https://emds.carrismetropolitana.pt/disturbance/available/routes)
-- [Routes for agency 41](https://emds.carrismetropolitana.pt/disturbance/available/routes/41)
-- [All trips](https://emds.carrismetropolitana.pt/disturbance/available/trips)
-- [Trips for agency 41](https://emds.carrismetropolitana.pt/disturbance/available/trips/41)
-
-## Service status
-
-- [Health](https://emds.carrismetropolitana.pt/health) confirms that the API is running.
-- [Readiness](https://emds.carrismetropolitana.pt/ready) checks database connectivity.
+``` (https://emds.carrismetropolitana.pt/disturbance/available) ```
+``` (https://emds.carrismetropolitana.pt/disturbance/available/routes) ```
+``` (https://emds.carrismetropolitana.pt/disturbance/available/routes/41) ```
+``` (https://emds.carrismetropolitana.pt/disturbance/available/trips) ```
+``` (https://emds.carrismetropolitana.pt/disturbance/available/trips/41) ```
 
 ## Response codes
 
@@ -197,9 +192,6 @@ are available:
 | `202` | Job accepted, queued, or still processing |
 | `400` | Missing or invalid filters |
 | `404` | Job does not exist |
-| `429` | Rate limit exceeded |
-| `500` | Job generation failed |
-| `503` | A required database is unavailable |
 
 ## Storage
 
