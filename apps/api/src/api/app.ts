@@ -91,7 +91,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
       return reply.code(400).send({
         error: {
           code: 'INVALID_QUERY',
-          message: error.message,
+          message:
+            'Parâmetros de consulta inválidos. Indique yearmonth, agency_id e reference em conjunto, ou não indique qualquer parâmetro.',
         },
       });
     }
