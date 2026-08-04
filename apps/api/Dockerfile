@@ -60,7 +60,4 @@ WORKDIR /app/apps/api
 
 EXPOSE 6192
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:6192/health >/dev/null || exit 1
-
-CMD ["node", "--enable-source-maps", "dist/launcher.js"]
+CMD ["./dist/launcher.js"]
