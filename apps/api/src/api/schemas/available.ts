@@ -1,4 +1,4 @@
-import { AGENCY_IDS } from '../../domain/consts.js';
+import { AGENCY_IDS } from '../../types/consts.js';
 
 export const availableResponseSchema = {
   type: 'object',

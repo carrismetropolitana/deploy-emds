@@ -1,55 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 
-import type { PublicDataRepository } from '../../database/repository/types.js';
-import { AGENCY_IDS, type AgencyId } from '../../domain/consts.js';
 import { ServiceUnavailableError } from '../errors.js';
-import { AvailableService, AvailableValuesService, type AvailableValuesResponse } from '../services/availability.js';
+import { AvailableService, AvailableValuesService } from '../services/availability.js';
 import { availableAgencyParamsSchema, availableResponseSchema, availableValuesResponseSchema } from '../schemas/available.js';
 import { errorSchema } from '../schemas/common.js';
+import type { AvailableAgencyParams } from '../../types/interfaces/available.js';
+import type { AvailableRoutesOptions } from '../../types/interfaces/routes.js';
+import { createAgencyServices } from '../utils/create-agency-services.js';
+import { getAgencyService } from '../utils/get-agency-service.js';
+import { getAvailableValues } from '../utils/get-available-values.js';
 
-interface AvailableRoutesOptions {
-  readonly repository: PublicDataRepository;
-}
-
-interface AvailableAgencyParams {
-  readonly agency_id: AgencyId;
-}
-
-type AgencyServices = ReadonlyMap<AgencyId, AvailableValuesService>;
-
-async function getAvailableValues(service: AvailableValuesService): Promise<AvailableValuesResponse> {
-  try {
-    return await service.list();
-  } catch (error) {
-    throw new ServiceUnavailableError(
-      'The database is temporarily unavailable',
-      { cause: error },
-    );
-  }
-}
-
-function getAgencyService( services: AgencyServices, agencyId: AgencyId ): AvailableValuesService {
-  const service = services.get(agencyId);
-  if (!service) {
-    throw new Error(
-      `Available values service is missing for agency ${agencyId}`,
-    );
-  }
-
-  return service;
-}
-
-function createAgencyServices( loadValues: (agencyId: AgencyId) => Promise<readonly string[]>, cacheTtlMilliseconds: number ): AgencyServices {
-  return new Map(
-    AGENCY_IDS.map((agencyId) => [
-      agencyId,
-      new AvailableValuesService(
-        () => loadValues(agencyId),
-        cacheTtlMilliseconds,
-      ),
-    ]),
-  );
-}
+/* * */
 
 export function registerAvailableRoutes( app: FastifyInstance, options: AvailableRoutesOptions ): void {
   //
@@ -57,26 +18,45 @@ export function registerAvailableRoutes( app: FastifyInstance, options: Availabl
   
   const { repository } = options;
   const cacheTtlMilliseconds = 300_000;
+
+  //
+  // Create the services
+
   const availableService = new AvailableService(
     repository,
     cacheTtlMilliseconds,
   );
+
+  //
+  // Create the routes service
   const routesService = new AvailableValuesService(
     () => repository.listAvailableRoutes(),
     cacheTtlMilliseconds,
   );
+
+  //
+  // Create the trips service
   const tripsService = new AvailableValuesService(
     () => repository.listAvailableTrips(),
     cacheTtlMilliseconds,
   );
+
+  //
+  // Create the routes by agency service
   const routesByAgency = createAgencyServices(
     (agencyId) => repository.listAvailableRoutes(agencyId),
     cacheTtlMilliseconds,
   );
+
+  //
+  // Create the trips by agency service
   const tripsByAgency = createAgencyServices(
     (agencyId) => repository.listAvailableTrips(agencyId),
     cacheTtlMilliseconds,
   );
+
+  //
+  // Register the routes
 
   app.get(
     '/disturbance/available',

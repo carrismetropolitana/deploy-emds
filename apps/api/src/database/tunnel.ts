@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 import { SshTunnel } from '@tmlmobilidade/ssh';
 
-import type { AppConfig } from '../config/index.js';
+import type { AppConfig } from '../config/types.js';
 
 function expandHomePath(path: string): string {
   if (path === '~') {

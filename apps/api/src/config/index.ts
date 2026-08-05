@@ -1,7 +1,7 @@
 import { getBoolean, getIdentifier, getIdentifierPath, getInteger } from './env.js';
 import type { AppConfig } from './types.js';
 
-export type { AppConfig } from './types.js';
+/* * */
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
   //

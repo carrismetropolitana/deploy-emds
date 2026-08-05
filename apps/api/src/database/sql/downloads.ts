@@ -1,4 +1,4 @@
-import type { DownloadFilters } from '../../domain/consts.js';
+import type { DownloadFilters } from '../../types/interfaces/download.js';
 import { quoteIdentifier, quoteIdentifierPath, sqlLiteral } from './helpers.js';
 import type { DatabaseIdentifiers } from './types.js';
 

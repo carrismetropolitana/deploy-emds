@@ -25,6 +25,9 @@
     "typecheck": {
       "dependsOn": ["^typecheck"],
       "outputs": []
+    },
+    "lint": {
+      "outputs": []
     }
   },
   "ui": "tui"

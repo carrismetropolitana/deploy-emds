@@ -3,16 +3,11 @@ import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 
-import type { AppConfig } from '../config/index.js';
-import type { PublicDataRepository } from '../database/repository/types.js';
+import type { BuildAppOptions } from '../types/interfaces/options.js';
 import { ServiceUnavailableError } from './errors.js';
 import { registerRoutes } from './routes/index.js';
 
-export interface BuildAppOptions {
-  readonly config: AppConfig;
-  readonly logger?: false;
-  readonly repository: PublicDataRepository;
-}
+/* * */
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const { config, repository } = options;

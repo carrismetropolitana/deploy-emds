@@ -5,16 +5,19 @@ import { unlink } from 'node:fs/promises';
 import { parse } from '@fast-csv/parse';
 import { CsvWriter } from '@tmlmobilidade/writers';
 
-import type { AgencyId, AvailableRow, DownloadFilters } from '../../domain/consts.js';
+import type { AvailableRow } from '../../types/interfaces/available.js';
+import type { AgencyId, CsvRow } from '../../types/types.js';
 import { SQLiteDownloadCache } from '../sqlite/download-cache.js';
-import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from './types.js';
 import type { DownloadJobRecord, ExpiredDownloadJobRecord } from '../sqlite/download-cache.js';
+import type {
+  CsvDownloadStream,
+  DownloadFilters,
+  DownloadJob,
+} from '../../types/interfaces/download.js';
+import type { PublicDataRepository } from '../../types/interfaces/repository.js';
+import { DOWNLOAD_CLEANUP_INTERVAL_MS, DOWNLOAD_RETENTION_MS, PROGRESS_UPDATE_BATCH_SIZE } from '../../types/consts.js';
 
-type CsvRow = Record<string, string>;
-
-const PROGRESS_UPDATE_BATCH_SIZE = 1_000;
-const DOWNLOAD_CLEANUP_INTERVAL_MS = 60 * 60 * 1_000; // 1 hour
-const DOWNLOAD_RETENTION_MS = 7 * 24 * 60 * 60 * 1_000; // 7 days
+/* * */
 
 function isMissingFileError(error: unknown): boolean {
   return (
@@ -57,6 +60,9 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
 
   startQueue(): void {
     if (this.queueTimer !== undefined) return;
+
+    // Keep generated CSVs for seven days. Cleanup runs once immediately and
+    // then every hour so old files do not accumulate between requests.
     this.cleanupTimer = setInterval(() => {
       this.runExpiredDownloadCleanup();
     }, DOWNLOAD_CLEANUP_INTERVAL_MS);
@@ -107,6 +113,8 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
     for (const job of jobs) {
       if (job.file_path !== null) {
         try {
+          // Remove the CSV before its SQLite row so a failed filesystem
+          // operation leaves the job available for a later cleanup attempt.
           await unlink(job.file_path);
         } catch (error) {
           if (!isMissingFileError(error)) {
@@ -122,39 +130,54 @@ export class SQLiteCachedPublicDataRepository implements PublicDataRepository {
 
   async enqueueApiGeneralDownload(filters: DownloadFilters): Promise<DownloadJob> {
     const serializedFilters = serializeFilters(filters);
-    const existing = this.cache.getJobByFilters(serializedFilters);
-    if (existing !== undefined && existing.status !== 'failed') {
-      return this.toDownloadJob(existing);
-    }
-
     const rowCount = await this.upstream.countApiGeneralDownload(filters);
-    const latest = this.cache.getJobByFilters(serializedFilters);
-    if (latest !== undefined) {
-      if (latest.status !== 'failed') {
-        return this.toDownloadJob(latest);
-      }
-      return this.toDownloadJob(
-        this.cache.retryJob(latest.id, serializedFilters, rowCount),
-      );
-    }
 
-    try {
-      const job = this.cache.createJob(
-        randomUUID(),
-        randomUUID(),
-        serializedFilters,
-        rowCount,
-      );
-      return this.toDownloadJob(job);
-    } catch (error) {
-      // Another identical request may have inserted the filters while this
-      // request was counting the source rows. Reuse that job.
-      const concurrent = this.cache.getJobByFilters(serializedFilters);
-      if (concurrent !== undefined && concurrent.status !== 'failed') {
-        return this.toDownloadJob(concurrent);
-      }
-      throw error;
-    }
+    /*
+     * Disabled while the source database is in beta. Keep this filter-based
+     * reuse flow here so it can be re-enabled when the source data is stable.
+     *
+     * const existing = this.cache.getJobByFilters(serializedFilters);
+     * if (existing !== undefined && existing.status !== 'failed') {
+     *   return this.toDownloadJob(existing);
+     * }
+     *
+     * const latest = this.cache.getJobByFilters(serializedFilters);
+     * if (latest !== undefined) {
+     *   if (latest.status !== 'failed') {
+     *     return this.toDownloadJob(latest);
+     *   }
+     *   return this.toDownloadJob(
+     *     this.cache.retryJob(latest.id, serializedFilters, rowCount),
+     *   );
+     * }
+     *
+     * try {
+     *   const job = this.cache.createJob(
+     *     randomUUID(),
+     *     randomUUID(),
+     *     serializedFilters,
+     *     rowCount,
+     *   );
+     *   return this.toDownloadJob(job);
+     * } catch (error) {
+     *   const concurrent = this.cache.getJobByFilters(serializedFilters);
+     *   if (concurrent !== undefined && concurrent.status !== 'failed') {
+     *     return this.toDownloadJob(concurrent);
+     *   }
+     *   throw error;
+     * }
+     */
+
+    // The source database is still in beta. Do not reuse a job by matching
+    // filters: every request must query the source and receive a new job_id
+    // with its own CSV file for comparison and troubleshooting.
+    const job = this.cache.createJob(
+      randomUUID(),
+      randomUUID(),
+      serializedFilters,
+      rowCount,
+    );
+    return this.toDownloadJob(job);
   }
 
   getDownloadJob(id: string): DownloadJob | undefined {

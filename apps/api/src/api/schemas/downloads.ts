@@ -1,4 +1,4 @@
-import { AGENCY_IDS, REFERENCE_TYPES } from '../../domain/consts.js';
+import { AGENCY_IDS, REFERENCE_TYPES } from '../../types/consts.js';
 
 export const downloadQuerySchema = {
   type: 'object',

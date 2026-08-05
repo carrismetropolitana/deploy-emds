@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-import type { PublicDataRepository } from '../../database/repository/types.js';
+import type { PublicDataRepository } from '../../types/interfaces/repository.js';
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema, statusSchema } from '../schemas/common.js';
 import { PROJECT_DOCUMENTATION_URL } from '../welcome.js';

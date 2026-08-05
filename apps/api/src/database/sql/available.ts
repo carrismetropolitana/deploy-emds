@@ -1,4 +1,4 @@
-import type { AgencyId } from '../../domain/consts.js';
+import type { AgencyId } from '../../types/types.js';
 import { quoteIdentifier, quoteIdentifierPath, sqlLiteral } from './helpers.js';
 import type { DatabaseIdentifiers } from './types.js';
 

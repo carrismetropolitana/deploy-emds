@@ -1,5 +1,6 @@
-const SQL_IDENTIFIER_PATH_PATTERN = /^[A-Za-z_][A-Za-z0-9_$]*(?:\.[A-Za-z_][A-Za-z0-9_$]*)*$/;
-const SQL_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_$]*$/;
+import { SQL_IDENTIFIER_PATH_PATTERN, SQL_IDENTIFIER_PATTERN } from '../types/consts.js';
+
+/* * */
 
 export function getBoolean(environment: NodeJS.ProcessEnv,name: string,fallback: boolean): boolean {
   const rawValue = environment[name];

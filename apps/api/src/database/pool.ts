@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-import type { AppConfig } from '../config/index.js';
+import type { AppConfig } from '../config/types.js';
 
 export function createPool(config: AppConfig): Pool {
   const isConnectionString =

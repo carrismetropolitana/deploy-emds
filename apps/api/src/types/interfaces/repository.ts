@@ -1,19 +1,12 @@
-import type { Readable } from 'node:stream';
+import type { AgencyId } from '../types.js';
+import type { AvailableRow } from './available.js';
+import type {
+  CsvDownloadStream,
+  DownloadFilters,
+  DownloadJob,
+} from './download.js';
 
-import type { AgencyId, AvailableRow, DownloadFilters } from '../../domain/consts.js';
-
-export interface DownloadJob {
-  readonly id: string;
-  readonly status: 'queued' | 'processing' | 'completed' | 'failed';
-  readonly rows: number | null;
-  readonly processed_rows: number;
-  readonly remaining_rows: number;
-  readonly error: string | null;
-}
-
-export interface CsvDownloadStream extends Readable {
-  readonly rowCount: number;
-}
+/* * */
 
 export interface PublicDataRepository {
   startQueue(): void;

@@ -1,5 +1,5 @@
-import type { AvailableData, AvailableRow } from '../../domain/consts.js';
-import type { PublicDataRepository } from '../../database/repository/types.js';
+import type { AvailableData, AvailableRow } from '../../types/interfaces/available.js';
+import type { PublicDataRepository } from '../../types/interfaces/repository.js';
 
 export interface AvailableResponse {
   readonly available_data: AvailableData;

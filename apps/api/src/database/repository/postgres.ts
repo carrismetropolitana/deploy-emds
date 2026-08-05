@@ -1,22 +1,25 @@
 import type { Readable } from 'node:stream';
-import type { Pool, PoolClient, QueryResultRow } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { to as copyTo } from 'pg-copy-streams';
 
-import type { AgencyId, AvailableRow, DownloadFilters } from '../../domain/consts.js';
+import type { DownloadFilters } from '../../types/interfaces/download.js';
+import type { AvailableRow } from '../../types/interfaces/available.js';
+import type { AgencyId } from '../../types/types.js';
 import { buildAvailableRoutesSql, buildAvailableSql, buildAvailableTripsSql } from '../sql/available.js';
 import { buildApiGeneralCountSql, buildApiGeneralCopySql } from '../sql/downloads.js';
 import type { DatabaseIdentifiers } from '../sql/types.js';
-import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from './types.js';
+import type {
+  CsvDownloadStream,
+  DownloadJob,
+} from '../../types/interfaces/download.js';
+import type { PublicDataRepository } from '../../types/interfaces/repository.js';
+import type {
+  DatabaseAvailableRow,
+  DatabaseAvailableValueRow,
+  DatabaseCountRow,
+} from '../../types/interfaces/database.js';
 
-interface DatabaseAvailableRow extends QueryResultRow, AvailableRow {}
-
-interface DatabaseAvailableValueRow extends QueryResultRow {
-  readonly value: string;
-}
-
-interface DatabaseCountRow extends QueryResultRow {
-  readonly count: string;
-}
+/* * */
 
 export class PostgresPublicDataRepository implements PublicDataRepository {
   constructor(

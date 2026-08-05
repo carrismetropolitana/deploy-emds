@@ -1,73 +1,21 @@
 import { ZipArchive } from 'archiver';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import type { CsvDownloadStream, DownloadJob, PublicDataRepository } from '../../database/repository/types.js';
-import type { DownloadFilters } from '../../domain/consts.js';
+import type { PublicDataRepository } from '../../types/interfaces/repository.js';
+import type { DownloadFilters, DownloadJob } from '../../types/interfaces/download.js';
+import type { DownloadRoutesOptions } from '../../types/interfaces/routes.js';
+import { DOWNLOAD_SUFFIX } from '../../types/consts.js';
+
 import { ServiceUnavailableError } from '../errors.js';
 import { errorSchema } from '../schemas/common.js';
 import { downloadFilterHelpResponseSchema, downloadJobResponseSchema, downloadMetadataResponseSchema, downloadQuerySchema } from '../schemas/downloads.js';
 import { sendFilterHelp } from '../welcome.js';
+import { createZipStream } from '../utils/create-zip-stream.js';
+import { downloadFilename, downloadZipFilename } from '../utils/download-filename.js';
+import { finalizeZipStream } from '../utils/finalize-zip-stream.js';
+import { isDownloadRequest } from '../utils/is-download-request.js';
 
-interface DownloadRoutesOptions {
-  readonly repository: PublicDataRepository;
-}
-
-const DOWNLOAD_SUFFIX = '/download';
-
-function isDownloadRequest(request: FastifyRequest): boolean {
-  return request.raw.url?.includes(DOWNLOAD_SUFFIX) ?? false;
-}
-
-function downloadPeriod(filters: DownloadFilters): string {
-  return filters.yearmonth;
-}
-
-function downloadFilename(filters: DownloadFilters): string {
-  const referenceSuffix = `_${filters.reference}`;
-  const routeSuffix =
-    filters.route_id === undefined
-      ? ''
-      : `_route-${filters.route_id}`;
-
-  return `api_general_${downloadPeriod(filters)}_${filters.agency_id}${referenceSuffix}${routeSuffix}.csv`;
-}
-
-function downloadZipFilename(filters: DownloadFilters): string {
-  return downloadFilename(filters).replace(/\.csv$/, '.zip');
-}
-
-function createZipStream(
-  request: FastifyRequest,
-  csvStream: CsvDownloadStream,
-  csvFilename: string,
-): ZipArchive {
-  const archive = new ZipArchive({ zlib: { level: 9 } });
-  archive.on('warning', (error) => {
-    request.log.warn({ err: error }, 'CSV ZIP archive warning');
-  });
-  archive.on('error', (error) => {
-    request.log.error({ err: error }, 'CSV ZIP archive failed');
-  });
-  archive.append(csvStream, { name: csvFilename });
-  return archive;
-}
-
-function finalizeZipStream(
-  request: FastifyRequest,
-  archive: ZipArchive,
-): void {
-  void archive.finalize().catch((error: unknown) => {
-    request.log.error({ err: error }, 'CSV ZIP archive finalization failed');
-  });
-}
-
-async function getDownloadMetadata( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<
-  FastifyReply | {
-    readonly filters: DownloadFilters;
-    readonly rows: number;
-    readonly message: string;
-  }
-> {
+async function getDownloadMetadata( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<FastifyReply | {readonly filters: DownloadFilters; readonly rows: number; readonly message: string }> {
   try {
     const rows = await repository.countApiGeneralDownload(request.query);
     reply.header('Cache-Control', 'no-store');
@@ -84,53 +32,7 @@ async function getDownloadMetadata( request: FastifyRequest<{ Querystring: Downl
   }
 }
 
-async function streamDownload( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<FastifyReply> {
-  let stream: CsvDownloadStream;
-  try {
-    stream = await repository.createApiGeneralDownload(request.query);
-  } catch (error) {
-    throw new ServiceUnavailableError(
-      'The database is temporarily unavailable',
-      { cause: error },
-    );
-  }
-
-  stream.once('error', (error) => {
-    request.log.error({ err: error }, 'CSV download stream failed');
-  });
-  stream.once('end', () => {
-    request.log.info(
-      { filters: request.query, rows: stream.rowCount },
-      'CSV download completed',
-    );
-  });
-
-  reply
-    .code(200)
-    .header('Cache-Control', 'public, max-age=3600')
-    .header(
-      'Content-Disposition',
-      `attachment; filename="${downloadZipFilename(request.query)}"`,
-    )
-    .header('X-Accel-Buffering', 'no')
-    .header('X-Content-Type-Options', 'nosniff')
-    .type('application/zip');
-
-  const archive = createZipStream(
-    request,
-    stream,
-    downloadFilename(request.query),
-  );
-  const response = reply.send(archive);
-  finalizeZipStream(request, archive);
-  return response;
-}
-
-async function streamJobDownload(
-  request: FastifyRequest<{ Params: { jobId: string } }>,
-  reply: FastifyReply,
-  repository: PublicDataRepository,
-): Promise<FastifyReply> {
+async function streamJobDownload( request: FastifyRequest<{ Params: { jobId: string } }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<FastifyReply> {
   const filters = repository.getDownloadJobFilters(request.params.jobId);
   if (filters === undefined) {
     return reply.code(404).send({
@@ -159,11 +61,7 @@ async function streamJobDownload(
   return response;
 }
 
-async function queueDownload(
-  request: FastifyRequest<{ Querystring: DownloadFilters }>,
-  reply: FastifyReply,
-  repository: PublicDataRepository,
-): Promise<FastifyReply> {
+async function queueDownload( request: FastifyRequest<{ Querystring: DownloadFilters }>, reply: FastifyReply, repository: PublicDataRepository ): Promise<FastifyReply> {
   let job: DownloadJob;
   try {
     job = await repository.enqueueApiGeneralDownload(request.query);

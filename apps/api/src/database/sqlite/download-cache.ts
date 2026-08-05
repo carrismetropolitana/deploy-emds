@@ -176,29 +176,39 @@ export class SQLiteDownloadCache {
     return this.getJob(id)!;
   }
 
-  retryJob(id: string, filters: string, rowCount: number): DownloadJobRecord {
-    this.database.databaseInstance
-      .prepare(
-        `UPDATE download_jobs
-         SET filters = ?, status = 'queued', row_count = ?,
-             processed_rows = 0, error_message = NULL, file_path = NULL, updated_at = ?
-         WHERE id = ?`,
-      )
-      .run(filters, rowCount, Date.now(), id);
-    return this.getJob(id)!;
-  }
-
   getJob(id: string): DownloadJobRecord | undefined {
     return this.database.databaseInstance
       .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE id = ?')
       .get(id) as DownloadJobRecord | undefined;
   }
 
-  getJobByFilters(filters: string): DownloadJobRecord | undefined {
-    return this.database.databaseInstance
-      .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE filters = ? ORDER BY created_at LIMIT 1')
-      .get(filters) as DownloadJobRecord | undefined;
-  }
+  /*
+   * Disabled while every request must receive a new job_id. Keep the retry
+   * implementation for the future filter-reuse flow.
+   *
+   * retryJob(id: string, filters: string, rowCount: number): DownloadJobRecord {
+   *   this.database.databaseInstance
+   *     .prepare(
+   *       `UPDATE download_jobs
+   *        SET filters = ?, status = 'queued', row_count = ?,
+   *            processed_rows = 0, error_message = NULL, file_path = NULL, updated_at = ?
+   *        WHERE id = ?`,
+   *     )
+   *     .run(filters, rowCount, Date.now(), id);
+   *   return this.getJob(id)!;
+   * }
+   */
+
+  /*
+   * Disabled while every request must receive a new job_id. Keeping the
+   * lookup commented makes the old cache behavior easy to restore later.
+   *
+   * getJobByFilters(filters: string): DownloadJobRecord | undefined {
+   *   return this.database.databaseInstance
+   *     .prepare('SELECT id, cache_key, filters, status, row_count, processed_rows, error_message, file_path FROM download_jobs WHERE filters = ? ORDER BY created_at LIMIT 1')
+   *     .get(filters) as DownloadJobRecord | undefined;
+   * }
+   */
 
   listExpiredCompletedJobs(
     updatedBefore: number,
