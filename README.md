@@ -1,12 +1,16 @@
-# DeployEMDS API
+# DeployEMDS disturbance data API
 
-The DeployEMDS API provides Carris Metropolitana road-link disturbance data.
+The deployEMDS disturbance API provides Carris Metropolitana road-link disturbance data,
+for Lisbon metropolitan area.
+To know more about the project and TML use case, please visit 
+``` https://go.tmlmobilidade.pt/reference/projects/deployEMDS ```
 
-Official API:
+
+## Disturbance API
 
 ``` https://emds.carrismetropolitana.pt/disturbance ```
 
-No account or credentials are required.
+
 
 ## How the API works
 
@@ -33,7 +37,7 @@ Optional filters can be combined in any combination:
 
 | Filter | Meaning | Example |
 | --- | --- | --- |
-| `disturbance_class` | Disturbance category | `high` |
+| `disturbance_class` | Disturbance category | `e - severe_late` |
 | `route_id` | Route to include | `1002_0` |
 | `trip_id` | Specific trip to include | `1002_0_20260615_0800` |
 
@@ -81,12 +85,10 @@ The API returns a job similar to:
 `rows` is the expected number of rows in the final CSV. `status_url` is the
 URL for this specific job.
 
-This older URL format is also supported:
+This other URL format is also supported:
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download ```
 
-The separate `/disturbance/download?...` URL is recommended because it is
-clearer.
 
 ## 3. Follow the job
 
@@ -108,24 +110,15 @@ While the file is being created, the response is similar to:
 ```
 
 `rows` is the expected total, `processed_rows` is the number already written,
-and `remaining_rows` is the number still to generate. Poll `status_url` again
-to refresh these values. When the status is `completed`, `remaining_rows` is
-`0` and the same URL downloads the ZIP containing the CSV. The API marks the job as `completed`
-only after the complete CSV has been flushed successfully.
+and `remaining_rows` is the number still to generate. Poll/refresh `status_url` again
+to see these values update. `status` changes from `queued` (the request is waiting
+for the worker) to `processing` (the CSV is being generated internally). 
 
-| Status | Meaning |
-| --- | --- |
-| `queued` | The request is waiting for the worker |
-| `processing` | The CSV is being generated |
-| `completed` | The CSV is ready |
-| `failed` | Generation failed; inspect `error` |
-
-Open the status URL again while the status is `queued` or `processing`.
 
 ## 4. Download the ZIP
 
-When the job status is `completed`, open the same status URL again. It will
-return a ZIP archive instead of JSON. The ZIP contains one CSV file.
+When the system completes the process
+the same URL automatically downloads a ZIP archive containing one CSV file.
 
 The ZIP response includes:
 
@@ -153,7 +146,7 @@ Using the `freeflow` reference:
 
 Filtering by disturbance class:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=e - severe_late ```
 
 Filtering by route:
 
@@ -165,10 +158,10 @@ Filtering by trip:
 
 Using every optional filter:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=high&route_id=1002_0&trip_id=1002_0_20260615_0800 ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=e - severe_late&route_id=1002_0&trip_id=1002_0_20260615_0800 ```
 
-To generate a file from any of these URLs, use the same filters with
-`/disturbance/download?...`.
+To generate a file from any of these URLs, use the same filters adding at the end
+`/download`.
 
 ## CSV columns
 
@@ -210,6 +203,4 @@ The API stores job information in `jobs_queue.sqlite`. Generated CSV content
 is stored separately as files, not inside SQLite. This keeps the queue small
 even when generated datasets are several gigabytes in size.
 
-Completed jobs and their generated files in `data/downloads` are retained for
-seven days. Expired files and their matching SQLite job rows are removed on
-startup and then checked every hour.
+Generated files are retained for seven days.
