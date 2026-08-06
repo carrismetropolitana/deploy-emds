@@ -171,10 +171,15 @@ Use the discovery pages before creating a job if you are unsure which values
 are available:
 
 ``` https://emds.carrismetropolitana.pt/disturbance/available ```
+
 ``` https://emds.carrismetropolitana.pt/disturbance/available/routes ```
+
 ``` https://emds.carrismetropolitana.pt/disturbance/available/routes/41 ```
+
 ``` https://emds.carrismetropolitana.pt/disturbance/available/trips ```
+
 ``` https://emds.carrismetropolitana.pt/disturbance/available/trips/41 ```
+
 
 ## Response codes
 
