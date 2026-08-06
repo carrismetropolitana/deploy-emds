@@ -2,6 +2,7 @@
 
 The deployEMDS disturbance API provides Carris Metropolitana road-link disturbance data,
 for Lisbon metropolitan area.
+
 To know more about the project and TML use case, please visit 
 ``` https://go.tmlmobilidade.pt/reference/projects/deployEMDS ```
 
@@ -136,7 +137,7 @@ The CSV inside the ZIP keeps the matching `.csv` filename.
 
 ## Complete filter examples
 
-All records for an agency and month:
+All records for an agency, month and a reference (the mandatory filters):
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned ```
 
@@ -144,38 +145,25 @@ Using the `freeflow` reference:
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=freeflow ```
 
-Filtering by disturbance class:
+Filtering including disturbance class:
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=e - severe_late ```
 
-Filtering by route:
+Filtering including route:
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0 ```
 
-Filtering by trip:
+Filtering including trip:
 
 ``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&trip_id=1002_0_20260615_0800 ```
 
 Using every optional filter:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=e - severe_late&route_id=1002_0&trip_id=1002_0_20260615_0800 ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0&trip_id=1002_0_3_1030_1059_0_1&disturbance_class=e - severe_late ```
 
 To generate a file from any of these URLs, use the same filters adding at the end
 `/download`.
 
-## CSV columns
-
-The CSV contains these columns, in this order:
-
-`roadlink_id`, `planned_sequence`, `yearmonth`, `agency_id`, `feed_id`,
-`route_id`, `route_name`, `direction_id`, `shape_id`, `trip_id`,
-`trip_headsign`, `trip_start_time`, `trip_start_hour`, `day_type`,
-`stop_pair_id`, `start_stop_id`, `end_stop_id`, `roadlink_geometry_wkt`,
-`geometry_quality`, `start_longitude`, `start_latitude`, `end_longitude`,
-`end_latitude`, `reference_type`, `n_events`, `disturbance_class`, `distance`,
-`reference_duration`, `observed_duration`, `deviation_duration`,
-`pct_deviation_duration`, `reference_speed`, `observed_speed`,
-`deviation_speed`, `pct_deviation_speed`.
 
 ## Discover available values
 
@@ -204,3 +192,18 @@ is stored separately as files, not inside SQLite. This keeps the queue small
 even when generated datasets are several gigabytes in size.
 
 Generated files are retained for seven days.
+
+
+## CSV columns
+
+The CSV contains these columns, in this order:
+
+`roadlink_id`, `planned_sequence`, `yearmonth`, `agency_id`, `feed_id`,
+`route_id`, `route_name`, `direction_id`, `shape_id`, `trip_id`,
+`trip_headsign`, `trip_start_time`, `trip_start_hour`, `day_type`,
+`stop_pair_id`, `start_stop_id`, `end_stop_id`, `roadlink_geometry_wkt`,
+`geometry_quality`, `start_longitude`, `start_latitude`, `end_longitude`,
+`end_latitude`, `reference_type`, `n_events`, `disturbance_class`, `distance`,
+`reference_duration`, `observed_duration`, `deviation_duration`,
+`pct_deviation_duration`, `reference_speed`, `observed_speed`,
+`deviation_speed`, `pct_deviation_speed`.
