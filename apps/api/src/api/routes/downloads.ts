@@ -77,7 +77,7 @@ async function queueDownload( request: FastifyRequest<{ Querystring: DownloadFil
     rows: job.rows,
     processed_rows: job.processed_rows,
     remaining_rows: job.remaining_rows,
-    status_url: `${request.host}/disturbance/download/${job.id}`,
+    status_url: `${request.protocol}://${request.host}/disturbance/download/${job.id}`,
   });
 }
 
