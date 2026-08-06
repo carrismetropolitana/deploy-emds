@@ -10,12 +10,10 @@ export const FILTER_HELP_RESPONSE = {
 } as const;
 
 export function sendFilterHelp(reply: FastifyReply): FastifyReply {
-  const baseUrl = `${reply.request.protocol}://${reply.request.host}`;
 
   return reply
     .type('application/json; charset=utf-8')
     .send({
       ...FILTER_HELP_RESPONSE,
-      available: `To view the available values for the filters, please see ${baseUrl}/disturbance/available.`,
     });
 }
