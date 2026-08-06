@@ -101,10 +101,9 @@ export const downloadJobResponseSchema = {
 export const downloadFilterHelpResponseSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['message', 'available', 'documentation'],
+  required: ['message', 'documentation'],
   properties: {
     message: { type: 'string' },
-    available: { type: 'string' },
     documentation: { type: 'string' },
   },
 } as const;
