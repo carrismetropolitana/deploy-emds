@@ -6,7 +6,7 @@ export const PROJECT_DOCUMENTATION_URL =
 export const FILTER_HELP_RESPONSE = {
   message:
     'Welcome to the TML Carris Metropolitana disturbance dataset API for the Lisbon Metropolitan Area. Use the filters below to query the dataset.',
-  available: 'To view the available values for the filters, please see /disturbance/available.',
+  available: 'Please check https://github.com/carrismetropolitana/deploy-emds for endpoints documentation.',
   documentation: PROJECT_DOCUMENTATION_URL,
 } as const;
 
