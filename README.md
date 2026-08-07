@@ -68,7 +68,7 @@ This request only counts matching rows. It does not generate a file.
 
 Use `/disturbance/download` before the query parameters:
 
-``` https://emds.carrismetropolitana.pt/disturbance/download?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0 ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download ```
 
 The API returns a job similar to:
 
@@ -85,11 +85,6 @@ The API returns a job similar to:
 
 `rows` is the expected number of rows in the final CSV. `status_url` is the
 URL for this specific job.
-
-This other URL format is also supported:
-
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download ```
-
 
 ## 3. Follow the job
 
