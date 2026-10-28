@@ -30,7 +30,7 @@ The first `/download` response is a job status, not the ZIP itself.
 
 | Filter | Meaning | Examples |
 | --- | --- | --- |
-| `yearmonth` | Month in `YYYYMM` format | `202606` |
+| `yearmonth` | Month in `YYYYMM` format | `202609` |
 | `agency_id` | Carris Metropolitana area | `41`, `42`, `43`, `44` |
 | `reference` | Comparison reference | `planned`, `freeflow` |
 
@@ -46,14 +46,14 @@ Optional filters can be combined in any combination:
 
 Open the filtered URL without `/download`:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned ```
 
 The response is similar to:
 
 ```json
 {
   "filters": {
-    "yearmonth": "202606",
+    "yearmonth": "202609",
     "agency_id": "41",
     "reference": "planned"
   },
@@ -68,7 +68,7 @@ This request only counts matching rows. It does not generate a file.
 
 Use `/disturbance/download` before the query parameters:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0/download ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned&route_id=1002_0/download ```
 
 The API returns a job similar to:
 
@@ -134,27 +134,27 @@ The CSV inside the ZIP keeps the matching `.csv` filename.
 
 All records for an agency, month and a reference (the mandatory filters):
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned ```
 
 Using the `freeflow` reference:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=freeflow ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=freeflow ```
 
 Filtering including disturbance class:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&disturbance_class=e - severe_late ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned&disturbance_class=e - severe_late ```
 
 Filtering including route:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0 ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned&route_id=1002_0 ```
 
 Filtering including trip:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&trip_id=1002_0_20260615_0800 ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned&trip_id=1002_0_20260615_0800 ```
 
 Using every optional filter:
 
-``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202606&agency_id=41&reference=planned&route_id=1002_0&trip_id=1002_0_3_1030_1059_0_1&disturbance_class=e - severe_late ```
+``` https://emds.carrismetropolitana.pt/disturbance?yearmonth=202609&agency_id=41&reference=planned&route_id=1002_0&trip_id=1002_0_3_1030_1059_0_1&disturbance_class=e - severe_late ```
 
 To generate a file from any of these URLs, use the same filters adding at the end
 `/download`.
